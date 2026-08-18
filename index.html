@@ -1,0 +1,1563 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ASCVD 風險與血脂治療計算器｜TSOC 2024 / 2025</title>
+<style>
+  :root{
+    --bg:#f5f6f8; --card:#ffffff; --ink:#1a1c1f; --muted:#666b73;
+    --line:#e2e5ea; --accent:#0b6b5b; --accent-soft:#e6f2ef; --border:#d7dbe0;
+    --low:#2f8f4e; --borderline:#c48a12; --intermediate:#d0651a; --high:#c0392b;
+    --mod:#3d8a4f; --vhigh:#e0a020; --ehigh:#e0702a; --blue:#3f7fb5;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,-apple-system,"Segoe UI",sans-serif;
+    line-height:1.55; padding:22px 16px 60px;
+  }
+  .wrap{max-width:1040px;margin:0 auto}
+  header h1{font-size:21px;margin:0 0 4px}
+  header p{margin:0;color:var(--muted);font-size:12.5px}
+
+  /* tabs */
+  .tabs{display:flex;gap:6px;margin:18px 0 0;border-bottom:2px solid var(--line)}
+  .tabs button{
+    padding:11px 18px;border:0;background:none;font-family:inherit;font-size:14px;font-weight:600;
+    color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;
+  }
+  .tabs button.on{color:var(--accent);border-bottom-color:var(--accent)}
+  .pane{display:none;padding-top:18px}
+  .pane.on{display:block}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media(max-width:840px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px}
+  .card h2{font-size:15px;margin:0 0 16px;letter-spacing:.02em}
+  .card h2 .sub{font-weight:400;color:var(--muted);font-size:12px;margin-left:6px}
+  .field{margin-bottom:14px}
+  label{display:block;font-size:13px;font-weight:600;margin-bottom:5px}
+  .hint{font-size:12px;color:var(--muted);font-weight:400}
+  label > .hint{margin-left:6px}
+  input[type=number],input[type=text],select{
+    width:100%;padding:9px 10px;border:1px solid var(--border);border-radius:7px;
+    font-size:15px;background:#fff;color:var(--ink);font-family:inherit;
+  }
+  input:focus,select:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .seg{display:flex;gap:8px}
+  .seg button{flex:1;padding:9px;border:1px solid var(--border);background:#fff;border-radius:7px;
+    cursor:pointer;font-size:14px;font-family:inherit;color:var(--ink)}
+  .seg button.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+  .seg button .hint{font-size:11px}
+  .seg button.on .hint{color:rgba(255,255,255,.85)}
+  .pts{float:right;font-size:12px;color:var(--accent);font-weight:700}
+  .toggle{font-size:12px;color:var(--accent);cursor:pointer;text-decoration:underline;background:none;border:0;padding:0;font-family:inherit}
+  .total{font-size:14px;color:var(--muted);margin:0 0 4px}
+  .score{font-size:44px;font-weight:700;line-height:1;margin:0}
+  .score span{font-size:16px;font-weight:400;color:var(--muted)}
+  .risk{font-size:33px;font-weight:700;margin:16px 0 2px}
+  .cat{display:inline-block;padding:5px 12px;border-radius:999px;font-size:13px;font-weight:700;color:#fff}
+  .breakdown{width:100%;border-collapse:collapse;margin-top:18px;font-size:13px}
+  .breakdown th,.breakdown td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left}
+  .breakdown th{color:var(--muted);font-weight:600}
+  .breakdown td:last-child,.breakdown th:last-child{text-align:right;font-variant-numeric:tabular-nums}
+  .tiers{margin-top:18px;font-size:12.5px;border-top:1px solid var(--line);padding-top:12px}
+  .tiers div{display:flex;justify-content:space-between;padding:3px 0;color:var(--muted)}
+  .tiers div.act{color:var(--ink);font-weight:700}
+  .dot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:7px}
+  footer{margin-top:22px;font-size:12px;color:var(--muted);border-top:1px solid var(--line);padding-top:14px}
+  footer a{color:var(--accent)}
+  .warn{background:#fff8e6;border:1px solid #f0dca8;border-radius:8px;padding:10px 12px;font-size:12.5px;margin-top:14px;color:#6b5518}
+  details summary{cursor:pointer;font-size:13px;font-weight:600;color:var(--accent)}
+  .ref{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:10px}
+  .ref th,.ref td{padding:4px 8px;border-bottom:1px solid var(--line);text-align:left}
+  .ref td:nth-child(3),.ref th:nth-child(3){text-align:right}
+
+  .gate{font-size:13px;color:var(--muted);background:#f2f4f6;border-radius:8px;padding:12px 14px}
+  .chk{display:flex;align-items:flex-start;gap:8px;font-size:13.5px;margin-bottom:9px;font-weight:500}
+  .chk input{margin-top:3px;width:16px;height:16px;accent-color:var(--accent);flex:0 0 auto}
+  .chk label{margin:0;font-weight:500;font-size:13.5px}
+  .chk .hint{display:block}
+  .q{border:1px solid var(--line);border-radius:9px;padding:14px;margin-bottom:14px;background:#fbfcfd}
+  .q h3{font-size:13.5px;margin:0 0 10px}
+  .q h3 small{font-weight:400;color:var(--muted)}
+  .sub{margin-left:24px;padding-left:10px;border-left:2px solid var(--line);margin-top:2px}
+  .rec{border-radius:10px;padding:16px 18px;color:#fff}
+  .rec h3{margin:0 0 6px;font-size:19px}
+  .rec p{margin:4px 0 0;font-size:13.5px;opacity:.95}
+  .rec .path{font-size:12px;opacity:.85;margin-top:10px;border-top:1px solid rgba(255,255,255,.3);padding-top:8px}
+  .flow{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:16px;font-size:11.5px;text-align:center}
+  .flow .n{border:1.5px solid var(--border);border-radius:7px;padding:7px 5px;background:#fff;color:var(--muted);opacity:.45}
+  .flow .n.on{opacity:1;font-weight:700;color:var(--ink)}
+  .flow .lbl{grid-column:1/-1;font-size:11px;color:var(--muted);text-align:left;margin-top:6px}
+  .flow .span4{grid-column:1/-1}
+  .n.low.on{border-color:var(--low);background:#eaf6ee}
+  .n.bl.on{border-color:var(--borderline);background:#fdf6e5}
+  .n.im.on{border-color:var(--intermediate);background:#fdeee2}
+  .n.hi.on{border-color:var(--high);background:#fbeae8}
+  .n.cac.on{border-color:var(--blue);background:#e8f1f8}
+
+  /* lipid tab */
+  .synced{background:var(--accent-soft);border:1px solid #c9e3dc;border-radius:9px;padding:12px 14px;font-size:12.5px;margin-bottom:16px;color:#0f5548}
+  .synced b{font-weight:700}
+  .auto{display:inline-block;font-size:10.5px;background:var(--accent);color:#fff;border-radius:4px;padding:1px 5px;margin-left:6px;vertical-align:1px;font-weight:700;letter-spacing:.04em}
+  .autoY{background:#0b6b5b}
+  .autoN{background:#b0b6bc}
+  .tag{display:inline-block;font-size:10.5px;border-radius:4px;padding:1px 6px;margin-left:6px;
+       color:#fff;font-weight:600;letter-spacing:.02em;white-space:nowrap}
+  .tag:empty{display:none}
+  .tag.manual{background:#8a7f6d}
+  .flag{display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:6px 0;border-bottom:1px dashed var(--line)}
+  .flag:last-child{border-bottom:0}
+  .flag em{font-style:normal;color:var(--muted);font-size:12px}
+  .goal{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+  .goalbox{border:1px solid var(--line);border-radius:9px;padding:12px 14px;background:#fbfcfd}
+  .goalbox .k{font-size:12px;color:var(--muted)}
+  .goalbox .v{font-size:26px;font-weight:700;line-height:1.2}
+  .steps{counter-reset:s;margin:14px 0 0;padding:0;list-style:none}
+  .steps li{position:relative;padding:0 0 12px 30px;font-size:13px;border-left:2px solid var(--line);margin-left:9px}
+  .steps li:last-child{border-left-color:transparent;padding-bottom:0}
+  .steps li::before{counter-increment:s;content:counter(s);position:absolute;left:-11px;top:0;width:20px;height:20px;
+    border-radius:50%;background:var(--accent);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center}
+  .steps li b{display:block;margin-bottom:2px}
+  .t1{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px;font-size:11.5px}
+  @media(max-width:840px){.t1{grid-template-columns:1fr 1fr}.goal{grid-template-columns:1fr}}
+  .t1 .col{border:1.5px solid var(--border);border-radius:8px;overflow:hidden;opacity:.5}
+  .t1 .col.on{opacity:1;box-shadow:0 0 0 2px rgba(11,107,91,.15)}
+  .t1 .col h4{margin:0;padding:6px;color:#fff;font-size:12px;text-align:center}
+  .t1 .col ul{margin:0;padding:8px 8px 8px 22px;line-height:1.45}
+
+  /* note output */
+  .btn{padding:9px 16px;border-radius:7px;border:1px solid var(--accent);background:var(--accent);color:#fff;
+       font-family:inherit;font-size:13.5px;font-weight:600;cursor:pointer}
+  .btn.ghost{background:#fff;color:var(--accent)}
+  .btn:active{transform:translateY(1px)}
+  textarea#note{width:100%;min-height:520px;padding:16px;border:1px solid var(--border);border-radius:9px;
+    font-family:"Menlo","Consolas","Noto Sans TC",monospace;font-size:13px;line-height:1.7;
+    color:var(--ink);background:#fbfcfd;resize:vertical;white-space:pre-wrap}
+  textarea#note:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
+  @media print{
+    body{background:#fff;padding:0}
+    header,nav.tabs,footer,.pane:not(#pane-t4),#pane-t4 .row,#pane-t4 .field,
+    #pane-t4 .btn,#pane-t4 .hint,#pane-t4 h2 .sub{display:none !important}
+    #pane-t4 .card{border:0;padding:0}
+    textarea#note{border:0;background:#fff;min-height:auto;height:auto;font-size:12px;padding:0;
+      font-family:"Noto Sans TC","PingFang TC",serif}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>ASCVD 風險評估與血脂治療計算器</h1>
+  <p>分頁 ①：TSOC 2024 初級預防指引 Table 4（TwCCCC CAD 風險）＋ Figure 5（CAC 演算法）　·　分頁 ②：2025 台灣血脂臨床路徑共識 Table 1／Figure 1／Figure 2</p>
+</header>
+
+<nav class="tabs">
+  <button type="button" data-tab="t1" class="on">① 10 年 CAD 風險與 CAC</button>
+  <button type="button" data-tab="t2">② 血脂治療目標與路徑</button>
+  <button type="button" data-tab="t3">③ 健保給付與用藥建議</button>
+  <button type="button" data-tab="t4">④ 病歷輸出</button>
+</nav>
+
+<!-- ======================= TAB 1 ======================= -->
+<div class="pane on" id="pane-t1">
+<div class="grid">
+  <section class="card">
+    <h2>受評者資料<span class="sub">Table 4 計分項目</span></h2>
+
+    <div class="field">
+      <label>年齡（歲）<span class="pts" id="p-age">0 分</span></label>
+      <input type="number" data-b="age" min="35" max="120" step="1" placeholder="35–120">
+      <div class="hint">適用 35 歲以上</div>
+    </div>
+
+    <div class="field">
+      <label>性別<span class="pts" id="p-sex">0 分</span></label>
+      <div class="seg"><button type="button" data-sex="M">男性</button><button type="button" data-sex="F">女性</button></div>
+    </div>
+
+    <div class="field">
+      <label>BMI（kg/m²）<span class="pts" id="p-bmi">0 分</span></label>
+      <div id="hw" class="row">
+        <input type="number" data-b="ht" step="0.1" placeholder="身高 cm">
+        <input type="number" data-b="wt" step="0.1" placeholder="體重 kg">
+      </div>
+      <input type="number" data-b="bmiv" step="0.1" placeholder="BMI" style="display:none">
+      <div class="hint" style="margin-top:5px"><span id="bmiOut">—</span>
+        <button class="toggle" id="bmiToggle" type="button">直接輸入 BMI</button></div>
+    </div>
+
+    <div class="field">
+      <label>收縮壓 SBP（mmHg）<span class="pts" id="p-sbp">0 分</span></label>
+      <input type="number" data-b="sbp" step="1" placeholder="例如 128">
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label>LDL-C（mg/dL）<span class="pts" id="p-ldl">0 分</span></label>
+        <input type="number" data-b="ldl" step="1" placeholder="例如 120">
+      </div>
+      <div class="field">
+        <label>HDL-C（mg/dL）<span class="pts" id="p-hdl">0 分</span></label>
+        <input type="number" data-b="hdl" step="1" placeholder="例如 48">
+      </div>
+    </div>
+
+    <div class="warn" id="warn" style="display:none"></div>
+  </section>
+
+  <section class="card">
+    <h2>評估結果</h2>
+    <p class="total">總分（Total point）</p>
+    <p class="score" id="score">—<span> / 24</span></p>
+    <p class="total" style="margin-top:20px">10 年冠心病風險（Estimated risk）</p>
+    <p class="risk" id="riskv">—</p>
+    <span class="cat" id="cat" style="background:#9aa0a6">請完成輸入</span>
+
+    <table class="breakdown">
+      <thead><tr><th>風險因子</th><th>分類</th><th>分數</th></tr></thead>
+      <tbody id="bd"></tbody>
+    </table>
+
+    <div class="tiers" id="tiers">
+      <div data-t="low"><span><span class="dot" style="background:var(--low)"></span>低風險</span><span>1–14 分　&lt; 3%</span></div>
+      <div data-t="borderline"><span><span class="dot" style="background:var(--borderline)"></span>臨界風險</span><span>15–17 分　3–7%</span></div>
+      <div data-t="intermediate"><span><span class="dot" style="background:var(--intermediate)"></span>中度風險</span><span>18–19 分　&gt; 7–10%</span></div>
+      <div data-t="high"><span><span class="dot" style="background:var(--high)"></span>高風險</span><span>20–24 分　&gt; 10%</span></div>
+    </div>
+  </section>
+</div>
+
+<section class="card" style="margin-top:18px">
+  <h2>Figure 5：CAC 分層與處置建議</h2>
+  <p style="font-size:12.5px;color:var(--muted);margin:-8px 0 16px">適用對象：<strong>無症狀、40–75 歲</strong>（Figure 5 設定），以上方 TwCCCC 風險分層為進入點。</p>
+
+  <div id="f5gate" class="gate">請先於上方完成風險計算，本區將自動判定是否符合 Figure 5 的適用設定。</div>
+
+  <div id="f5body" style="display:none">
+    <div class="chk" style="margin-bottom:16px">
+      <input type="checkbox" data-b="asym" id="asym">
+      <label for="asym">個案目前<strong>無心血管症狀</strong>（asymptomatic，無胸痛、無已知 ASCVD）</label>
+    </div>
+
+    <div id="f5inputs" style="display:none">
+      <div class="grid">
+        <div class="q">
+          <h3>CAC 分數（Agatston score）</h3>
+          <input type="number" data-b="cac" min="0" step="1" placeholder="輸入 CAC 分數；若尚未檢查請留空">
+          <div class="chk" style="margin-top:10px;margin-bottom:0">
+            <input type="checkbox" data-b="pct75" id="pct75">
+            <label for="pct75">CAC ≥ 同年齡／同性別第 75 百分位</label>
+          </div>
+        </div>
+        <div class="q">
+          <h3>風險增強因子 <small>（用於 CAC &lt; 100 之判定）</small></h3>
+          <div class="chk"><input type="checkbox" data-b="famhx" id="famhx">
+            <label for="famhx">早發性心肌梗塞／冠心病家族史</label></div>
+          <div class="chk" style="margin-bottom:0"><input type="checkbox" data-b="smoker" id="smoker">
+            <label for="smoker">目前吸菸</label></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="rec" id="rec" style="background:#9aa0a6">
+      <h3 id="recTitle">—</h3>
+      <p id="recBody"></p>
+      <p id="recLdl" style="display:none"></p>
+      <div class="path" id="recPath"></div>
+    </div>
+
+    <div class="flow" id="flow">
+      <div class="n low" data-n="low">Low<br>&lt; 3%</div>
+      <div class="n bl" data-n="bl">Borderline<br>3–7%</div>
+      <div class="n im" data-n="im">Intermediate<br>&gt; 7–10%</div>
+      <div class="n hi" data-n="hi">High<br>&gt; 10%</div>
+      <div class="lbl">↓ Borderline / Intermediate → 考慮 CAC 檢查</div>
+      <div class="n cac span4" data-n="cactest">Consider CAC testing</div>
+      <div class="lbl">↓ 依 CAC 結果分流</div>
+      <div class="n" data-n="a">CAC &lt; 100<br>且無早發 MI 家族史<br>且非吸菸者</div>
+      <div class="n" data-n="b">CAC = 100–399</div>
+      <div class="n" data-n="c">CAC ≥ 400 或<br>≥ 第 75 百分位</div>
+      <div class="n hi" data-n="d">High risk<br>（不需 CAC）</div>
+      <div class="lbl">↓ 處置</div>
+      <div class="n" data-n="ra">LSM +<br>consider withhold statin</div>
+      <div class="n" data-n="rb">LSM +<br>consider statin</div>
+      <div class="n" data-n="rc">LSM + moderate-intensity statin<br>↓ LDL-C 30–50%</div>
+      <div class="n" data-n="rd">LSM + high-intensity statin<br>↓ LDL-C &gt; 50% + OMT</div>
+      <div class="lbl" style="text-align:center;margin-top:2px">低風險者不需 CAC，直接 Lifestyle modification (LSM)</div>
+    </div>
+  </div>
+</section>
+
+<section class="card" style="margin-top:18px">
+  <details><summary>檢視 Table 4 原始計分表</summary>
+    <div class="grid" style="margin-top:12px"><table class="ref" id="refA"></table><table class="ref" id="refB"></table></div>
+  </details>
+</section>
+</div>
+
+<!-- ======================= TAB 2 ======================= -->
+<div class="pane" id="pane-t2">
+
+<div class="synced" id="syncMsg">分頁 ① 已輸入的資料會自動帶入本頁；在本頁修改也會同步回分頁 ①。</div>
+
+<div class="grid">
+  <section class="card">
+    <h2>基本資料與檢驗值<span class="sub">與分頁 ① 同步</span></h2>
+    <div class="row">
+      <div class="field"><label>年齡（歲）</label><input type="number" data-b="age" step="1" placeholder="歲"></div>
+      <div class="field"><label>性別</label>
+        <div class="seg"><button type="button" data-sex="M">男性</button><button type="button" data-sex="F">女性</button></div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field"><label>LDL-C（mg/dL）</label><input type="number" data-b="ldl" step="1"></div>
+      <div class="field"><label>HDL-C（mg/dL）</label><input type="number" data-b="hdl" step="1"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label>收縮壓 SBP（mmHg）</label><input type="number" data-b="sbp" step="1"></div>
+      <div class="field"><label>舒張壓 DBP（mmHg）</label><input type="number" data-b="dbp" step="1" placeholder="例如 88"></div>
+    </div>
+    <div class="field">
+      <div class="gate" style="padding:10px 12px;margin-bottom:8px">
+        血壓請填入<strong>標準化 722 居家血壓</strong>（連續 7 天、每天早晚 2 次、每次 2 讀值）。
+        高血壓判定門檻為 <strong>≥ 130/80 mmHg</strong>，或勾選下方已使用降壓藥物。
+      </div>
+      <div class="chk" style="margin:0"><input type="checkbox" data-b="antihtn" id="antihtn">
+        <label for="antihtn">目前使用降壓藥物<span class="hint">（勾選即視為高血壓）</span></label></div>
+    </div>
+    <div class="row">
+      <div class="field"><label>CAC 分數</label><input type="number" data-b="cac" step="1" placeholder="未檢查可留空"></div>
+      <div class="field">
+        <label>總膽固醇 TC（mg/dL）</label>
+        <input type="number" data-b="tc" step="1" placeholder="例如 210">
+      </div>
+    </div>
+    <div class="hint" id="nonhdlNow" style="margin:-6px 0 14px">—</div>
+
+    <div class="q" style="margin-bottom:0">
+      <h3>其他檢驗值與量測 <small>（選填；填入後右側項目會自動勾選）</small></h3>
+      <div class="row">
+        <div class="field"><label>腰圍（cm）</label><input type="number" data-b="waist" step="0.1" placeholder="男 ≥90／女 ≥80"></div>
+        <div class="field"><label>空腹血糖（mg/dL）</label><input type="number" data-b="glu" step="1" placeholder="≥100 / ≥126"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>三酸甘油酯 TG（mg/dL）</label><input type="number" data-b="tg" step="1" placeholder="≥150"></div>
+        <div class="field"><label>HbA1c（%）</label><input type="number" data-b="hba1c" step="0.1" placeholder="≥6.5"></div>
+      </div>
+      <div class="row" style="margin-bottom:0">
+        <div class="field" style="margin-bottom:0"><label>eGFR（mL/min/1.73m²）</label><input type="number" data-b="egfr" step="1" placeholder="&lt;60"></div>
+        <div class="field" style="margin-bottom:0"><label>UACR（mg/g）</label><input type="number" data-b="uacr" step="1" placeholder="≥30"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>次級預防條件<span class="sub">Very high / Extremely high</span></h2>
+    <div class="q">
+      <h3>已確診 ASCVD（Very high risk）</h3>
+      <div class="chk"><input type="checkbox" data-b="acs" id="acs"><label for="acs">曾發生急性冠心症（ACS）</label></div>
+      <div class="chk"><input type="checkbox" data-b="revasc" id="revasc"><label for="revasc">曾接受冠狀動脈血管重建（PCI 或 CABG）</label></div>
+      <div class="chk"><input type="checkbox" data-b="stroke" id="stroke"><label for="stroke">缺血性中風／TIA 且與動脈粥狀硬化相關</label></div>
+      <div class="chk"><input type="checkbox" data-b="pad" id="pad"><label for="pad">周邊動脈疾病（曾血管重建、肢體缺血症狀或曾截肢）</label></div>
+      <div class="chk" style="margin-bottom:0"><input type="checkbox" data-b="sten50" id="sten50"><label for="sten50">影像證實顯著斑塊負荷（狹窄 ≥ 50%：CAG、CT 血管攝影、頸動脈或周邊超音波）</label></div>
+    </div>
+    <div class="q" style="margin-bottom:0">
+      <h3>Extremely high risk <small>（冠心病 CAD 合併下列任一）</small></h3>
+      <div class="chk"><input type="checkbox" data-b="cad" id="cad"><label for="cad">已確診冠心病（CAD）</label></div>
+      <div class="sub">
+        <div class="chk"><input type="checkbox" data-b="mi1y" id="mi1y"><label for="mi1y">1 年內發生心肌梗塞</label></div>
+        <div class="chk"><input type="checkbox" data-b="mi2" id="mi2"><label for="mi2">曾發生 ≥ 2 次心肌梗塞</label></div>
+        <div class="chk"><input type="checkbox" data-b="mvd" id="mvd"><label for="mvd">多血管冠心病（multivessel CAD）</label></div>
+        <div class="chk"><input type="checkbox" data-b="acsdm" id="acsdm"><label for="acsdm">ACS 合併糖尿病</label></div>
+        <div class="chk" style="margin-bottom:0"><input type="checkbox" data-b="padcar" id="padcar"><label for="padcar">周邊動脈疾病或頸動脈狹窄</label></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="grid" style="margin-top:18px">
+  <section class="card">
+    <h2>高風險條件<span class="sub">High risk（初級預防）</span></h2>
+    <div class="chk"><input type="checkbox" data-b="dm" id="dm"><label for="dm">糖尿病<span class="tag" id="t-dm"></span></label></div>
+    <div class="chk"><input type="checkbox" data-b="ckd" id="ckd"><label for="ckd">慢性腎臟病（未透析；UACR ≥ 30 mg/g 或 eGFR &lt; 60 mL/min/1.73m² 持續 ≥ 3 個月）<span class="tag" id="t-ckd"></span></label></div>
+    <div class="flag"><span>LDL-C ≥ 190 mg/dL<span class="auto autoN" id="a-ldl190">自動</span></span><em id="e-ldl190">未輸入 LDL-C</em></div>
+    <div class="flag"><span>CAC score ≥ 400<span class="auto autoN" id="a-cac400">自動</span></span><em id="e-cac400">未輸入 CAC</em></div>
+  </section>
+
+  <section class="card">
+    <h2>心血管危險因子<span class="sub">Low：1 項／Moderate：≥ 2 項</span>
+      <button type="button" class="toggle" id="resetAuto" style="float:right;display:none">回復全部自動判定</button></h2>
+    <div class="chk"><input type="checkbox" data-b="htn" id="htn"><label for="htn">高血壓<span class="tag" id="t-htn"></span><span class="hint" id="h-htn"></span></label></div>
+    <div class="chk" id="menoRow" style="display:none"><input type="checkbox" data-b="meno" id="meno">
+      <label for="meno">已停經<span class="hint">（僅健保表二舊制之危險因子定義採計）</span></label></div>
+    <div class="flag"><span>年齡（男 ≥ 45 歲／女 ≥ 55 歲）<span class="auto autoN" id="a-agerf">自動</span></span><em id="e-agerf">未輸入</em></div>
+    <div class="chk"><input type="checkbox" data-b="famhx" id="famhx2">
+      <label for="famhx2">早發性冠心病家族史（男 ≤ 55 歲／女 ≤ 65 歲發病）<span class="auto autoN" id="a-fam">自動</span></label></div>
+    <div class="flag"><span>HDL-C 偏低（男 &lt; 40／女 &lt; 50 mg/dL）<span class="auto autoN" id="a-hdl">自動</span></span><em id="e-hdl">未輸入</em></div>
+    <div class="chk" style="margin-top:9px"><input type="checkbox" data-b="smoker" id="smoker2">
+      <label for="smoker2">吸菸<span class="auto autoN" id="a-smk">自動</span></label></div>
+    <div class="flag"><span>代謝症候群（≥ 3 項）<span class="auto autoN" id="a-mets">自動</span></span><em id="e-mets">0 / 5 項</em></div>
+    <div class="sub" style="margin-top:8px">
+      <div class="chk"><input type="checkbox" data-b="ms_waist" id="ms_waist"><label for="ms_waist">腰圍（男 ≥ 90／女 ≥ 80 cm）<span class="tag" id="t-ms_waist"></span></label></div>
+      <div class="chk"><input type="checkbox" data-b="ms_bp" id="ms_bp"><label for="ms_bp">血壓 ≥ 130/85 mmHg 或使用降壓藥<span class="tag" id="t-ms_bp"></span></label></div>
+      <div class="chk"><input type="checkbox" data-b="ms_glu" id="ms_glu"><label for="ms_glu">空腹血糖 ≥ 100 mg/dL 或使用降血糖藥<span class="tag" id="t-ms_glu"></span></label></div>
+      <div class="chk"><input type="checkbox" data-b="ms_tg" id="ms_tg"><label for="ms_tg">空腹三酸甘油酯 ≥ 150 mg/dL 或使用降 TG 藥物<span class="tag" id="t-ms_tg"></span></label></div>
+      <div class="chk" style="margin-bottom:0"><input type="checkbox" data-b="ms_hdl" id="ms_hdl"><label for="ms_hdl">HDL-C 偏低（男 &lt; 40／女 &lt; 50 mg/dL）<span class="tag" id="t-ms_hdl"></span></label></div>
+    </div>
+    <p class="hint" style="margin:14px 0 0;border-top:1px solid var(--line);padding-top:10px">
+      標示<span class="tag autoY" style="margin:0">自動</span>者係依已輸入的檢驗值判定，可直接點選覆寫（覆寫後顯示「手動」，並可按上方「回復全部自動判定」還原）。
+      高血壓僅以兩種方式判定：<strong>標準化 722 居家血壓 ≥ 130/80 mmHg</strong>，或<strong>目前使用降壓藥物</strong>。
+      依 2024 初級預防指引 Part II §5.6.1，2022 台灣高血壓指引（TSOC／台灣高血壓學會）以 722 居家血壓 130/80 mmHg 作為高血壓的診斷方法與切點，
+      並指出「For management decisions, home BP monitoring is recommended rather than routine office BP」；該文 Figure 2 的風險圖亦全部以居家血壓為軸，
+      其註腳的 ≥ 140/90 係<strong>低風險者啟動藥物治療的門檻</strong>而非診斷定義，故本計算器不提供診間血壓判定。
+      糖尿病、慢性腎臟病之自動勾選僅依單次檢驗值提示，正式診斷仍須符合各該疾病之診斷條件（如 CKD 須持續 ≥ 3 個月）。
+      註：分頁 ① Table 4 的 SBP 計分係依原始世代之血壓量測，與此處的高血壓判定門檻無關。
+    </p>
+  </section>
+</div>
+
+<section class="card" style="margin-top:18px">
+  <h2>風險分層與 LDL-C 目標<span class="sub">Table 1</span></h2>
+  <div class="rec" id="lrec" style="background:#9aa0a6">
+    <h3 id="lTitle">請輸入資料</h3>
+    <p id="lBody">依 Table 1 判定風險等級後，將顯示對應的 LDL-C／non-HDL-C 治療目標與臨床路徑。</p>
+    <div class="path" id="lWhy"></div>
+  </div>
+
+  <div class="goal">
+    <div class="goalbox"><div class="k">LDL-C 治療目標</div><div class="v" id="gLdl">—</div><div class="hint" id="gLdlNote"></div></div>
+    <div class="goalbox"><div class="k">non-HDL-C 次要目標（LDL-C 目標 + 30）</div><div class="v" id="gNon">—</div><div class="hint" id="gNonNote">LDL-C 達標後可作為次要治療目標</div></div>
+  </div>
+
+  <div class="t1" id="t1grid">
+    <div class="col" data-c="low"><h4 style="background:#a3c853">Low</h4><ul><li>1 項危險因子</li><li>LDL-C &lt; 130 mg/dL</li></ul></div>
+    <div class="col" data-c="moderate"><h4 style="background:var(--mod)">Moderate</h4><ul><li>≥ 2 項危險因子</li><li>LDL-C &lt; 115 mg/dL</li></ul></div>
+    <div class="col" data-c="high"><h4 style="background:#4bb0e0">High</h4><ul><li>糖尿病、CKD</li><li>LDL-C ≥ 190</li><li>CAC ≥ 400</li><li>目標 &lt; 100 mg/dL</li></ul></div>
+    <div class="col" data-c="vhigh"><h4 style="background:var(--vhigh)">Very high</h4><ul><li>已確診 ASCVD</li><li>狹窄 ≥ 50%</li><li>目標 &lt; 70 mg/dL</li></ul></div>
+    <div class="col" data-c="ehigh" style="grid-column:span 4"><h4 style="background:var(--ehigh)">Extremely high</h4><ul style="columns:2"><li>CAD 併 1 年內 MI、≥ 2 次 MI、多血管 CAD、ACS＋糖尿病、PAD 或頸動脈狹窄</li><li>PAD 併 CAD 或頸動脈狹窄</li><li>目標 LDL-C &lt; 55 mg/dL</li></ul></div>
+  </div>
+</section>
+
+<section class="card" style="margin-top:18px">
+  <h2 id="pathTitle">建議臨床路徑</h2>
+  <ol class="steps" id="steps"><li><b>請先完成上方輸入</b>判定風險等級後顯示對應之 Figure 1（初級預防）或 Figure 2（次級預防）路徑。</li></ol>
+</section>
+</div>
+
+<!-- ======================= TAB 3 ======================= -->
+<div class="pane" id="pane-t3">
+
+<div class="synced" id="nhiSync">依分頁 ②「心血管危險因子」與「次級預防條件」判定之風險等級，對應健保署 115/9/1 生效之降血脂藥物給付規定表一。</div>
+
+<section class="card">
+  <h2>病人目前血脂值<span class="sub">同步自分頁 ①／②</span></h2>
+  <div class="goal" style="grid-template-columns:repeat(4,1fr)">
+    <div class="goalbox"><div class="k">LDL-C（主要標的）</div><div class="v" id="cLdl">—</div><div class="hint" id="cLdlNote">—</div></div>
+    <div class="goalbox"><div class="k">non-HDL-C（次要標的）</div><div class="v" id="cNon">—</div><div class="hint" id="cNonNote">＝ 總膽固醇 − HDL-C</div></div>
+    <div class="goalbox"><div class="k">總膽固醇 TC</div><div class="v" id="cTc">—</div><div class="hint" id="cTcNote">用於計算 non-HDL-C 及表二判定</div></div>
+    <div class="goalbox"><div class="k">HDL-C</div><div class="v" id="cHdl">—</div><div class="hint" id="cHdlNote">—</div></div>
+  </div>
+</section>
+
+<section class="card" style="margin-top:18px">
+  <h2>步驟 1–2：風險等級 → 表一（新制）給付門檻與目標</h2>
+  <div class="rec" id="nRec" style="background:#9aa0a6">
+    <h3 id="nTitle">請先於分頁 ② 完成輸入</h3>
+    <p id="nBody">判定風險等級後，將顯示健保表一之非藥物治療要求、起始藥物治療血脂值與目標值。</p>
+    <div class="path" id="nWhy"></div>
+  </div>
+
+  <div class="goal" style="grid-template-columns:repeat(4,1fr)">
+    <div class="goalbox"><div class="k">非藥物治療</div><div class="v" style="font-size:15px;line-height:1.4" id="nLsm">—</div></div>
+    <div class="goalbox"><div class="k">起始藥物治療血脂值</div><div class="v" id="nStart">—</div><div class="hint" id="nStartNote"></div></div>
+    <div class="goalbox"><div class="k">主要血脂目標值</div><div class="v" id="nGoal">—</div><div class="hint" id="nGoalNote"></div></div>
+    <div class="goalbox"><div class="k">次要目標 non-HDL-C</div><div class="v" id="nNon">—</div><div class="hint" id="nNonNote"></div></div>
+  </div>
+
+  <table class="breakdown" style="margin-top:18px">
+    <thead><tr><th>ASCVD 風險等級</th><th>非藥物治療</th><th>起始藥物治療血脂值</th><th>主要目標</th><th>次要 non-HDL-C</th></tr></thead>
+    <tbody id="nTable"></tbody>
+  </table>
+  <p class="hint" style="margin:8px 0 0">non-HDL-C ＝ 總膽固醇 − HDL-C，於 LDL-C 已達標後作為次要標的，尤其適用合併高三酸甘油酯、糖尿病或肥胖之病人。</p>
+</section>
+
+<section class="card" style="margin-top:18px">
+  <h2 id="nPathTitle">表一處方規定：起始強度與追蹤間隔</h2>
+  <ol class="steps" id="nSteps"><li><b>請先完成分頁 ② 之輸入</b>判定風險等級後顯示對應處方規定。</li></ol>
+  <p class="hint" id="nFh" style="margin:12px 0 0"></p>
+</section>
+
+<section class="card" style="margin-top:18px">
+  <h2>步驟 3：選擇藥品<span class="sub">此時才需核對健保碼</span></h2>
+
+  <div class="grid">
+    <div class="q">
+      <h3>健保碼查詢 <small>（判斷是否適用表一）</small></h3>
+      <input type="text" id="nhiCode" placeholder="輸入 10 碼健保代碼，例如 BC24129100" style="text-transform:uppercase">
+      <div id="codeOut" class="gate" style="margin-top:10px">輸入健保碼後，判定該品項適用表一（新制）或僅適用表二（舊制），以及 ezetimibe／複方之等待期。</div>
+    </div>
+    <div class="q">
+      <h3>建議 statin 強度 <small>（依所需 LDL-C 降幅）</small></h3>
+      <div id="intenOut" class="gate">需分頁 ② 之風險等級與目前 LDL-C。</div>
+      <table class="ref" style="margin-top:10px">
+        <thead><tr><th>強度</th><th>院內可用（適用表一）</th><th>須避開</th></tr></thead>
+        <tbody>
+          <tr><td>High ↓ ≥ 50%</td><td>Lipitor 40mg</td><td>Crestor 20mg → 僅適用表二</td></tr>
+          <tr><td>Moderate ↓ 30–&lt;50%</td><td>Lipitor 20mg、Crestor 10mg、Zulitor 4mg</td><td>Caduet 5/20 → 僅適用表二</td></tr>
+          <tr><td>Low ↓ &lt; 30%</td><td>Linicor（lovastatin 20＋niacin）</td><td>—</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <details style="margin-top:6px"><summary>院內降血脂藥品 × 新制對照（11 項）</summary>
+    <table class="ref">
+      <thead><tr><th>院內商品名</th><th>學名／劑量</th><th>健保碼</th><th>診間判定</th></tr></thead>
+      <tbody>
+        <tr><td>Lipitor 20mg</td><td>Atorvastatin 20mg</td><td>BC22890100</td><td>適用表一（新制）</td></tr>
+        <tr><td>LIPITOR 40mg</td><td>Atorvastatin 40mg</td><td>BC22889100</td><td>適用表一（新制）</td></tr>
+        <tr><td>Crestor 10mg</td><td>Rosuvastatin 10mg</td><td>BC24131100</td><td>適用表一（新制）</td></tr>
+        <tr style="background:#fbeae8"><td>Crestor 20mg</td><td>Rosuvastatin 20mg</td><td>BC24129100</td><td>僅適用表二（舊制）</td></tr>
+        <tr><td>Zulitor 4mg</td><td>Pitavastatin 4mg</td><td>AC58639100</td><td>適用表一（新制）</td></tr>
+        <tr><td>Linicor 20/500mg</td><td>Lovastatin 20＋Niacin 500mg</td><td>AC57216100</td><td>適用表一（新制）</td></tr>
+        <tr style="background:#fbeae8"><td>Caduet 5/20mg</td><td>Amlodipine 5＋Atorvastatin 20mg</td><td>BC24392100</td><td>僅適用表二（舊制）</td></tr>
+        <tr><td>Ezetrol 10mg</td><td>Ezetimibe 10mg</td><td>BC24058100</td><td>statin 單用 6~8 週未達標可併用</td></tr>
+        <tr><td>Atozet 10/20mg</td><td>Ezetimibe／Atorvastatin 10/20mg</td><td>BC27283100</td><td>statin 單用 6~8 週未達標可換用</td></tr>
+        <tr><td>Tonvasca 2/10mg</td><td>Pitavastatin 2＋Ezetimibe 10mg</td><td>AC61165100</td><td>statin 單用 6~8 週未達標可換用</td></tr>
+        <tr style="background:#fbeae8"><td>Cretrol 10/20mg</td><td>Ezetimibe 10＋Rosuvastatin 20mg</td><td>BC28182100</td><td>在 2.6.3 清單內 → 仍須 statin 單用滿 3 個月</td></tr>
+      </tbody>
+    </table>
+    <p class="hint">紅底＝受影響品項。判定僅依健保碼比對，實際仍以健保署公告為準。</p>
+  </details>
+
+  <div class="q" style="margin:14px 0 0;background:#fff8e6;border-color:#f0dca8">
+    <h3>診間三個提醒</h3>
+    <ol style="margin:0;padding-left:20px;font-size:13px">
+      <li>要高強度就用 <strong>atorvastatin 40mg（Lipitor 40）</strong>——院內唯一高強度且走表一的品項。</li>
+      <li>高血壓合併高血脂<strong>不要開 Caduet</strong>；拆成 amlodipine 單方 ＋ Lipitor 20/40，statin 端即回到表一，換得 15–30 mg/dL 的門檻差。</li>
+      <li>要加 ezetimibe 就<strong>避開 Cretrol</strong>；需要「高強度＋ezetimibe」時，Lipitor 40 ＋ Ezetrol 10 分開開是唯一不必等 3 個月的路徑（約省 6 週）。</li>
+    </ol>
+  </div>
+</section>
+
+<section class="card" style="margin-top:18px">
+  <h2>表二（舊制）對照<span class="sub">若處方品項落在 116 項清單內</span></h2>
+  <div class="rec" id="t2Rec" style="background:#9aa0a6">
+    <h3 id="t2Title">—</h3>
+    <p id="t2Body"></p>
+    <div class="path" id="t2Gap"></div>
+  </div>
+
+  <div class="goal" style="grid-template-columns:1fr 1fr">
+    <div class="goalbox"><div class="k">是否符合表二起始藥物治療條件</div>
+      <div class="v" style="font-size:20px" id="t2Start">—</div><div class="hint" id="t2StartNote"></div></div>
+    <div class="goalbox"><div class="k">是否已達表二血脂目標值</div>
+      <div class="v" style="font-size:20px" id="t2Goal">—</div><div class="hint" id="t2GoalNote"></div></div>
+  </div>
+
+  <table class="breakdown" style="margin-top:16px">
+    <thead><tr><th>表二適用對象</th><th>非藥物治療</th><th>起始藥物治療血脂值</th><th>血脂目標值</th><th>本病人</th></tr></thead>
+    <tbody id="t2Table"></tbody>
+  </table>
+  <p class="hint" style="margin:12px 0 0">
+    表二危險因子定義與表一不同：高血壓、男 ≥ 45／女 ≥ 55 歲<strong>或停經</strong>、早發性冠心病家族史、<strong>HDL-C &lt; 40 mg/dL（不分性別）</strong>、吸菸，<strong>不含代謝症候群</strong>。
+    表二處方規定：第一年每 3–6 個月抽血一次，第二年以後至少每 6–12 個月一次，並注意肝功能異常與橫紋肌溶解症。
+    吸菸而符合起步治療準則者，若未戒菸而要求藥物治療，應以自費治療。
+  </p>
+</section>
+
+<section class="card" style="margin-top:18px">
+  <details><summary>本計算器判定準則 × 健保給付規範一致性檢核</summary>
+    <table class="ref" style="margin-top:10px">
+      <thead><tr><th>項目</th><th>健保 115/9/1 規定</th><th>本計算器</th></tr></thead>
+      <tbody>
+        <tr><td>極高／非常高風險定義</td><td>CAD 併 1 年內 MI／≥2 次 MI／多支阻塞／ACS＋DM／PAD 或頸動脈狹窄；PAD 併 CAD 或頸動脈狹窄；ASCVD 或影像狹窄 ≥ 50%</td><td>✅ 一致</td></tr>
+        <tr><td>高風險定義</td><td>糖尿病、CKD（UACR ≥ 30 或 eGFR &lt; 60 持續 ≥ 3 個月）、LDL-C ≥ 190、CAC ≥ 400</td><td>✅ 一致</td></tr>
+        <tr><td>危險因子 6 項與代謝症候群 5 子項</td><td>高血壓、男 ≥45／女 ≥55、早發性冠心病家族史、HDL-C 男 &lt;40／女 &lt;50、抽菸、代謝症候群（≥ 3 項）</td><td>✅ 一致</td></tr>
+        <tr><td>LDL-C 目標值</td><td>&lt; 55／70／100／115／130／160</td><td>✅ 一致（0 因子級新增於本頁）</td></tr>
+        <tr><td>non-HDL-C 次要目標</td><td>&lt; 85／100／130／145／160；0 因子無</td><td>✅ 一致</td></tr>
+        <tr><td>0 項危險因子級</td><td>起始 LDL-C ≥ 160、目標 &lt; 160</td><td>⚠️ 2025 共識 Table 1 無此級 → 已於本頁補上</td></tr>
+        <tr><td>起始藥物治療血脂值</td><td>各級明列</td><td>⚠️ 分頁 ② 僅顯示目標值 → 已於本頁補上</td></tr>
+        <tr><td>高血壓之判定門檻</td><td>未定義數值</td><td>ℹ️ 本計算器採 2022 台灣高血壓指引 722 居家血壓 ≥ 130/80 或使用降壓藥</td></tr>
+        <tr><td>ezetimibe／複方等待期</td><td>6~8 週；2.6.2 之 4 項與 2.6.3 之 10 項仍須 3 個月</td><td>⚠️ 原未涵蓋 → 已於本頁補上（含健保碼查詢）</td></tr>
+        <tr><td>表二（舊制）116 項品項</td><td>不適用表一，起始值與目標值依舊制</td><td>⚠️ 原未涵蓋 → 已於本頁補上</td></tr>
+      </tbody>
+    </table>
+  </details>
+</section>
+</div>
+
+<!-- ======================= TAB 4 ======================= -->
+<div class="pane" id="pane-t4">
+<section class="card">
+  <h2>病歷輸出<span class="sub">依 ①②③ 分頁之輸入與判定自動產生</span></h2>
+
+  <div class="row" style="grid-template-columns:1fr 1fr 1fr">
+    <div class="field"><label>病歷號／識別碼<span class="hint">選填</span></label>
+      <input type="text" id="chartNo" placeholder="留空則不列出"></div>
+    <div class="field"><label>姓名<span class="hint">選填</span></label>
+      <input type="text" id="ptName" placeholder="留空則不列出"></div>
+    <div class="field"><label>評估日期</label><input type="text" id="noteDate"></div>
+  </div>
+
+  <div class="field">
+    <label>輸出格式</label>
+    <div class="seg">
+      <button type="button" data-fmt="full" class="on">中文・完整<br><span class="hint">分項條列</span></button>
+      <button type="button" data-fmt="brief">中文・精簡<br><span class="hint">單段落，可直接貼入病程</span></button>
+      <button type="button" data-fmt="en">English<br><span class="hint">SOAP A/P style</span></button>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+    <button type="button" class="btn" id="btnCopy">複製到剪貼簿</button>
+    <button type="button" class="btn ghost" id="btnTxt">下載 .txt</button>
+    <button type="button" class="btn ghost" id="btnPrint">列印／存成 PDF</button>
+    <span class="hint" id="copyMsg" style="align-self:center"></span>
+  </div>
+
+  <textarea id="note" spellcheck="false"></textarea>
+  <p class="hint" style="margin:8px 0 0">內容可直接於上方編輯後再複製。姓名與病歷號僅存在於本頁面，不會被儲存或傳送。</p>
+</section>
+</div>
+
+<footer>
+  <strong>資料來源</strong>：① Chao TH, et al. 2024 Guidelines of the Taiwan Society of Cardiology on the Primary Prevention of ASCVD — Part I.
+  <em>Acta Cardiol Sin</em> 2024;40:479–543（Table 4、Figure 5）。
+  ② Li YH, Shih CL, et al. 2025 Consensus on the Clinical Pathway of Blood Cholesterol Management in Taiwan.
+  <em>Acta Cardiol Sin</em> 2025;41:161–165（Table 1、Figure 1、Figure 2）。
+  高血壓診斷門檻依 Chao TH, et al. 同系列 Part II，<em>Acta Cardiol Sin</em> 2024;40:669–715，§5.6.1 與 Figure 2（引用 2022 台灣高血壓指引之 722 居家血壓 130/80 mmHg）。
+  ③ 健保署「藥品給付規定」第 2 節 2.6.1／2.6.2／2.6.3，115 年 9 月 1 日生效之修訂（依《降血脂藥物給付規定_115年9月1日修訂_診間速查_v2》整理）。實際給付以健保署最新公告為準。
+  官方 TwCCCC 線上計算器：<a href="http://140.112.117.151/klchien/" target="_blank" rel="noopener">http://140.112.117.151/klchien/</a><br>
+  本工具僅供醫療專業人員參考與衛教用途，不能取代臨床判斷；用藥種類、劑量與適應症請依藥品仿單及健保給付規定。
+</footer>
+</div>
+
+<script>
+/* ============ 共用資料模型（跨頁籤同步） ============ */
+const M = {age:'',sex:'',ht:'',wt:'',bmiv:'',sbp:'',dbp:'',ldl:'',hdl:'',tc:'',cac:'',
+  waist:'',glu:'',tg:'',hba1c:'',egfr:'',uacr:'',antihtn:false,meno:false,
+  pct75:false,famhx:false,smoker:false,asym:false,
+  acs:false,revasc:false,stroke:false,pad:false,sten50:false,
+  cad:false,mi1y:false,mi2:false,mvd:false,acsdm:false,padcar:false,
+  dm:false,ckd:false,htn:false,
+  ms_waist:false,ms_bp:false,ms_glu:false,ms_tg:false,ms_hdl:false};
+let bmiManual = false;
+const R = {t1:null, f5:null, lipid:null, nhi:null};   // 各分頁判定結果，供病歷輸出使用
+
+const $ = id => document.getElementById(id);
+const N = k => { const v = parseFloat(M[k]); return Number.isFinite(v) ? v : null; };
+
+function sync(k){
+  document.querySelectorAll(`[data-b="${k}"]`).forEach(el=>{
+    if (el.type === 'checkbox'){ if (el.checked !== M[k]) el.checked = M[k]; }
+    else if (el.value !== M[k]) el.value = M[k];
+  });
+}
+/* 可由檢驗值自動判定的勾選項；使用者手動更動後即記入 over，改由人工控制 */
+const AUTOKEYS = ['htn','dm','ckd','ms_waist','ms_bp','ms_glu','ms_tg','ms_hdl'];
+const over = new Set();
+
+document.querySelectorAll('[data-b]').forEach(el=>{
+  const k = el.dataset.b;
+  el.addEventListener(el.type === 'checkbox' ? 'change' : 'input', ()=>{
+    M[k] = el.type === 'checkbox' ? el.checked : el.value;
+    if (el.type === 'checkbox' && AUTOKEYS.includes(k)) over.add(k);
+    sync(k); render();
+  });
+});
+$('resetAuto').onclick = ()=>{ over.clear(); render(); };
+document.querySelectorAll('[data-seg]').forEach(btn => btn.onclick = ()=>{
+  const k = btn.dataset.seg;
+  M[k] = btn.dataset.val;
+  document.querySelectorAll(`[data-seg="${k}"]`).forEach(b => b.classList.toggle('on', b.dataset.val === M[k]));
+  render();
+});
+document.querySelectorAll('[data-sex]').forEach(btn => btn.onclick = ()=>{
+  M.sex = btn.dataset.sex;
+  document.querySelectorAll('[data-sex]').forEach(b => b.classList.toggle('on', b.dataset.sex === M.sex));
+  render();
+});
+document.querySelectorAll('.tabs button').forEach(b => b.onclick = ()=>{
+  document.querySelectorAll('.tabs button').forEach(x => x.classList.toggle('on', x === b));
+  document.querySelectorAll('.pane').forEach(p => p.classList.toggle('on', p.id === 'pane-' + b.dataset.tab));
+  window.scrollTo({top:0, behavior:'smooth'});
+});
+$('bmiToggle').onclick = ()=>{
+  bmiManual = !bmiManual;
+  $('hw').style.display = bmiManual ? 'none' : 'grid';
+  document.querySelector('[data-b="bmiv"]').style.display = bmiManual ? 'block' : 'none';
+  $('bmiToggle').textContent = bmiManual ? '改用身高／體重計算' : '直接輸入 BMI';
+  render();
+};
+
+/* ============ 分頁 ①：Table 4 ============ */
+const AGE = [[35,39,0],[40,44,1],[45,49,2],[50,54,3],[55,59,4],[60,64,5],[65,69,6],[70,74,7],[75,Infinity,8]];
+const BMIT = [[-Infinity,21.9999,0,"< 22"],[22,25.9999,1,"22–25.9"],[26,Infinity,2,"≥ 26"]];
+const SBPT = [[-Infinity,109,0,"< 110"],[110,129,1,"110–129"],[130,149,2,"130–149"],[150,159,3,"150–159"],[160,Infinity,4,"≥ 160"]];
+const LDLT = [[-Infinity,89,0,"< 90"],[90,149,1,"90–149"],[150,Infinity,2,"≥ 150"]];
+const HDLT = [[-Infinity,29,5,"< 30"],[30,39,4,"30–39"],[40,59,3,"40–59"],[60,69,2,"60–69"],[70,79,1,"70–79"],[80,Infinity,0,"≥ 80"]];
+const RISK = {3:0.001,4:0.001,5:0.002,6:0.003,7:0.003,8:0.005,9:0.006,10:0.008,11:0.011,12:0.014,
+  13:0.019,14:0.025,15:0.033,16:0.044,17:0.058,18:0.076,19:0.099,20:0.129,21:0.168,22:0.216,23:0.276,24:0.349};
+const band = (t,v) => v === null ? null : t.find(r => v >= r[0] && v <= r[1]);
+
+(function(){
+  let a = '<thead><tr><th>風險因子</th><th>分類</th><th>分數</th></tr></thead><tbody>';
+  AGE.forEach((r,i)=> a += `<tr><td>${i?'':'年齡 Age'}</td><td>${r[1]===Infinity?'≥ 75':r[0]+'–'+r[1]}</td><td>${r[2]}</td></tr>`);
+  a += `<tr><td>性別 Sex</td><td>男 Men</td><td>3</td></tr><tr><td></td><td>女 Women</td><td>0</td></tr>`;
+  [['BMI',BMIT],['SBP',SBPT],['LDL',LDLT],['HDL',HDLT]].forEach(([n,t])=>
+    t.forEach((r,i)=> a += `<tr><td>${i?'':n}</td><td>${r[3]}</td><td>${r[2]}</td></tr>`));
+  $('refA').innerHTML = a + '</tbody>';
+  let b = '<thead><tr><th>總分</th><th></th><th>風險</th></tr></thead><tbody>';
+  Object.keys(RISK).forEach(k => b += `<tr><td>${k}</td><td></td><td>${(RISK[k]*100).toFixed(1)}%</td></tr>`);
+  $('refB').innerHTML = b + '</tbody>';
+})();
+
+function getBMI(){
+  if (bmiManual) return N('bmiv');
+  const h = N('ht'), w = N('wt');
+  return (h && w && h > 0) ? w / Math.pow(h/100, 2) : null;
+}
+
+function calcTab1(){
+  const age = N('age'), bmi = getBMI(), sbp = N('sbp'), ldl = N('ldl'), hdl = N('hdl');
+  $('bmiOut').textContent = bmi ? `BMI = ${bmi.toFixed(1)}` : '—';
+
+  const aB = age === null ? null : AGE.find(r => age >= r[0] && age <= r[1]);
+  const rows = [
+    ['年齡', aB ? (aB[1]===Infinity ? '≥ 75' : `${aB[0]}–${aB[1]}`) : null, aB ? aB[2] : null],
+    ['性別', M.sex==='M' ? '男性' : M.sex==='F' ? '女性' : null, M.sex ? (M.sex==='M'?3:0) : null],
+    ['BMI',  band(BMIT,bmi)?.[3] ?? null, band(BMIT,bmi)?.[2] ?? null],
+    ['SBP',  band(SBPT,sbp)?.[3] ?? null, band(SBPT,sbp)?.[2] ?? null],
+    ['LDL-C',band(LDLT,ldl)?.[3] ?? null, band(LDLT,ldl)?.[2] ?? null],
+    ['HDL-C',band(HDLT,hdl)?.[3] ?? null, band(HDLT,hdl)?.[2] ?? null],
+  ];
+  ['age','sex','bmi','sbp','ldl','hdl'].forEach((k,i)=> $('p-'+k).textContent = rows[i][2]===null ? '— 分' : rows[i][2] + ' 分');
+  $('bd').innerHTML = rows.map(r =>
+    `<tr><td>${r[0]}</td><td style="color:${r[1]?'inherit':'var(--muted)'}">${r[1] ?? '未填'}</td><td>${r[2]===null?'—':r[2]}</td></tr>`).join('');
+
+  const msgs = [];
+  if (age !== null && age < 35) msgs.push('此模型適用 35 歲以上族群，未滿 35 歲的估計值不適用。');
+  if (age !== null && age > 120) msgs.push('請確認年齡輸入是否正確。');
+  if (bmi !== null && (bmi < 10 || bmi > 70)) msgs.push('BMI 數值異常，請確認身高／體重單位（cm／kg）。');
+  $('warn').style.display = msgs.length ? 'block' : 'none';
+  $('warn').innerHTML = msgs.join('<br>');
+
+  const done = rows.every(r => r[2] !== null) && (age === null || age >= 35);
+  if (!done){
+    $('score').innerHTML = '—<span> / 24</span>';
+    $('riskv').textContent = '—';
+    $('cat').textContent = '請完成輸入';
+    $('cat').style.background = '#9aa0a6';
+    document.querySelectorAll('#tiers div').forEach(d => d.classList.remove('act'));
+    R.t1 = null; R.bmi = bmi;
+    fig5(null);
+    return null;
+  }
+
+  const total = rows.reduce((s,r)=> s + r[2], 0);
+  $('score').innerHTML = total + '<span> / 24</span>';
+  const risk = RISK[total];
+  $('riskv').textContent = risk === undefined ? '< 0.1%' : (risk*100).toFixed(1) + '%';
+
+  let t, label, color;
+  if (total <= 14){ t='low'; label='低風險 Low（< 3% / 10 年）'; color='var(--low)'; }
+  else if (total <= 17){ t='borderline'; label='臨界風險 Borderline（3–7% / 10 年）'; color='var(--borderline)'; }
+  else if (total <= 19){ t='intermediate'; label='中度風險 Intermediate（> 7–10% / 10 年）'; color='var(--intermediate)'; }
+  else { t='high'; label='高風險 High（> 10% / 10 年）'; color='var(--high)'; }
+  $('cat').textContent = label;
+  $('cat').style.background = color;
+  document.querySelectorAll('#tiers div').forEach(d => d.classList.toggle('act', d.dataset.t === t));
+
+  const res = {tier:t, age, ldl, total, risk};
+  R.t1 = {total, risk, tier:t, label, bmi, rows};
+  R.bmi = bmi;
+  fig5(res);
+  return res;
+}
+
+/* ============ 分頁 ①：Figure 5 ============ */
+const C = {low:'#2f8f4e', bl:'#c48a12', im:'#d0651a', hi:'#c0392b', cac:'#3f7fb5', grey:'#9aa0a6'};
+
+function fig5(res){
+  const gate = $('f5gate'), body = $('f5body'), lit = new Set();
+  if (!res){
+    gate.style.display='block'; body.style.display='none';
+    gate.textContent = '請先於上方完成風險計算，本區將自動判定是否符合 Figure 5 的適用設定。';
+    R.f5 = null;
+    return;
+  }
+  if (res.age < 40 || res.age > 75){
+    gate.style.display='block'; body.style.display='none';
+    gate.innerHTML = `此個案年齡 <strong>${res.age} 歲</strong>，不在 Figure 5 的設定範圍（無症狀、40–75 歲）內，故不套用該演算法。`
+      + `<br>指引亦說明 CAC 在較年輕與較年長族群的試驗證據有限，尚無法作出建議。`;
+    R.f5 = {ok:false, note:`年齡 ${res.age} 歲，不在 Figure 5 設定範圍（無症狀、40–75 歲）內，不套用 CAC 演算法`,
+            en:`not applicable — age ${res.age}, outside the 40-75 y/o setting of Figure 5`};
+    return;
+  }
+  gate.style.display='none'; body.style.display='block';
+
+  const asym = M.asym, tier = res.tier;
+  lit.add(tier==='low'?'low':tier==='borderline'?'bl':tier==='intermediate'?'im':'hi');
+  const needCAC = (tier === 'borderline' || tier === 'intermediate');
+  $('f5inputs').style.display = (asym && needCAC) ? 'block' : 'none';
+
+  let color = C.grey, title = '—', bodyTxt = '', path = '', ldlTxt = '', en = '';
+
+  if (!asym){
+    title = '尚未確認為無症狀個案';
+    en = 'not applicable — asymptomatic status not confirmed';
+    bodyTxt = 'Figure 5 的演算法僅適用於無症狀（asymptomatic）者。若個案有心血管症狀或已知 ASCVD，屬次級預防／診斷流程，不適用此圖（請改用分頁 ② 的次級預防路徑）。請勾選上方確認欄以顯示建議。';
+  } else if (tier === 'low'){
+    color = C.low; title = 'Lifestyle modification (LSM)';
+    en = 'Low risk (<3%/10y) → lifestyle modification only; CAC testing not needed';
+    bodyTxt = '低風險（< 3% / 10 年）：以生活型態調整為主，不需進行 CAC 檢查，亦不需常規啟用 statin。持續控制危險因子並定期再評估。';
+    path = '路徑：Low (< 3%) → Lifestyle modification (LSM)';
+  } else if (tier === 'high'){
+    color = C.hi; title = 'LSM + 高強度 statin（LDL-C 降幅 > 50%）+ OMT';
+    en = 'High risk (>10%/10y) → LSM + high-intensity statin (LDL-C reduction >50%) + OMT; CAC testing not recommended (COR III)';
+    bodyTxt = '高風險（> 10% / 10 年）：直接給予生活型態調整合併高強度 statin，使 LDL-C 較基期下降超過 50%，並合併最佳藥物治療（OMT）。指引明列高風險者<strong>不建議</strong>再做 CAC 檢查（COR III, LOE B）。';
+    path = '路徑：High (> 10%) → LSM + high-intensity statin ↓LDL-C > 50% + OMT';
+    lit.add('d'); lit.add('rd');
+    if (res.ldl) ldlTxt = `以目前 LDL-C ${res.ldl} mg/dL 計，降幅 > 50% 之目標約為 < ${Math.round(res.ldl*0.5)} mg/dL。`;
+  } else {
+    lit.add('cactest');
+    const cac = N('cac'), pct75 = M.pct75, fam = M.famhx, smk = M.smoker;
+    const tierName = tier === 'borderline' ? '臨界風險（3–7%）' : '中度風險（> 7–10%）';
+    if (cac === null && !pct75){
+      color = C.cac; title = '建議考慮 CAC 檢查（Consider CAC testing）';
+      en = `${tier === 'borderline' ? 'Borderline' : 'Intermediate'} risk → consider CAC testing (Class IIa)`;
+      bodyTxt = `${tierName}：若 statin 使用與否仍不確定，使用 CAC 分數協助決定暫緩、不給或啟用 statin 是合理的（Class IIa, LOE B）。請輸入 CAC 分數以取得後續處置建議；在取得結果前，先行生活型態調整。`;
+      path = `路徑：${tier==='borderline'?'Borderline':'Intermediate'} → Consider CAC testing`;
+    } else if (pct75 || (cac !== null && cac >= 400)){
+      color = C.im; title = 'LSM + 中強度 statin（LDL-C 降幅 30–50%）';
+      en = 'CAC >=400 or >=75th percentile → LSM + moderate-intensity statin (LDL-C reduction 30-50%)';
+      bodyTxt = `${tierName}，且 ${(cac!==null&&cac>=400)?'CAC ≥ 400':'CAC ≥ 同年齡／同性別第 75 百分位'}：屬風險上修，建議生活型態調整合併中強度 statin，使 LDL-C 下降 30–50%。`;
+      path = '路徑：Borderline / Intermediate → CAC testing → CAC ≥ 400 或 ≥ 75th percentile → LSM + moderate-intensity statin';
+      lit.add('c'); lit.add('rc');
+      if (res.ldl) ldlTxt = `以目前 LDL-C ${res.ldl} mg/dL 計，降幅 30–50% 之目標區間約為 ${Math.round(res.ldl*0.5)}–${Math.round(res.ldl*0.7)} mg/dL。`;
+    } else if (cac >= 100){
+      color = C.bl; title = 'LSM + 考慮使用 statin（consider statin）';
+      en = 'CAC 100-399 → LSM + consider statin';
+      bodyTxt = `${tierName}，CAC = 100–399：建議生活型態調整，並與個案共同決策考慮啟用 statin。（另有文獻建議 CAC > 100 者可考慮預防性阿斯匹靈，惟須權衡出血風險。）`;
+      path = '路徑：Borderline / Intermediate → CAC testing → CAC 100–399 → LSM + consider statin';
+      lit.add('b'); lit.add('rb');
+    } else if (!fam && !smk){
+      color = C.low; title = 'LSM + 可考慮暫不使用 statin（consider withhold statin）';
+      en = 'CAC <100 with no FHx of premature MI and non-smoker → LSM + consider withholding statin';
+      bodyTxt = `${tierName}，CAC < 100、無早發性心肌梗塞家族史且非吸菸者：符合 Figure 5 的風險下修條件，以生活型態調整為主，可考慮暫緩或不給 statin，並定期再評估。`;
+      path = '路徑：Borderline / Intermediate → CAC testing → CAC < 100 且無早發 MI 家族史且非吸菸 → LSM + consider withhold statin';
+      lit.add('a'); lit.add('ra');
+    } else {
+      color = C.bl; title = 'LSM + 考慮使用 statin（不符合暫不使用之條件）';
+      en = 'CAC <100 but with FHx of premature MI and/or current smoking → LSM + consider statin';
+      const why = [fam?'早發性心肌梗塞／冠心病家族史':null, smk?'目前吸菸':null].filter(Boolean).join('、');
+      bodyTxt = `${tierName}，CAC < 100，但具有 <strong>${why}</strong>，未滿足 Figure 5 中「CAC &lt; 100 且無早發 MI 家族史且非吸菸」之完整條件，因此不宜據此暫停 statin。建議生活型態調整並與個案共同決策考慮 statin；吸菸者務必戒菸。`;
+      path = '註：此組合未落在 Figure 5 的任一終端方框，上述為依圖示邏輯之保守解讀。';
+      lit.add('rb');
+    }
+  }
+  R.f5 = {ok: asym, en, title: title.replace(/<[^>]+>/g,''), path: path.replace(/<[^>]+>/g,''),
+          body: bodyTxt.replace(/<[^>]+>/g,''), ldl: ldlTxt.replace(/<[^>]+>/g,''),
+          note: asym ? '' : '未確認為無症狀個案，Figure 5 演算法暫不適用'};
+  $('rec').style.background = color;
+  $('recTitle').innerHTML = title;
+  $('recBody').innerHTML = bodyTxt;
+  $('recLdl').style.display = ldlTxt ? 'block' : 'none';
+  $('recLdl').innerHTML = ldlTxt;
+  $('recPath').innerHTML = path;
+  document.querySelectorAll('#flow .n').forEach(n => n.classList.toggle('on', lit.has(n.dataset.n)));
+}
+
+/* ============ 分頁 ②：Table 1 + Figure 1/2 ============ */
+const TIER = {
+  low:      {name:'低風險 Low',              target:130, non:160, color:'#7ba832'},
+  moderate: {name:'中度風險 Moderate',        target:115, non:145, color:'#3d8a4f'},
+  high:     {name:'高風險 High',             target:100, non:130, color:'#3391c4'},
+  vhigh:    {name:'極高風險 Very high',       target:70,  non:100, color:'#d09a10'},
+  ehigh:    {name:'超高風險 Extremely high',  target:55,  non:85,  color:'#d4691f'},
+};
+
+function setAuto(id, on, text){
+  const el = $('a-'+id); el.className = 'auto ' + (on ? 'autoY' : 'autoN');
+  el.textContent = on ? '✓ 符合' : '未符合';
+  const e = $('e-'+id);
+  if (e && text !== undefined) e.textContent = text;
+}
+
+function calcTab2(t1){
+  const age = N('age'), ldl = N('ldl'), hdl = N('hdl'), sbp = N('sbp'), dbp = N('dbp'),
+        cac = N('cac'), tc = N('tc'), waist = N('waist'), glu = N('glu'), tg = N('tg'),
+        hba1c = N('hba1c'), egfr = N('egfr'), uacr = N('uacr');
+  const male = M.sex === 'M';
+  const fHdlLow = hdl !== null && M.sex ? ((male && hdl < 40) || (!male && hdl < 50)) : null;
+
+  /* ---- 依已輸入之數值自動勾選（可被手動覆寫） ---- */
+  const src = {};   // 佐證文字
+  const D = {};     // 自動判定結果：true / false / null（資料不足）
+  const bpLabel = `居家 722 血壓 ${sbp ?? '—'}/${dbp ?? '—'}`;
+  D.htn = M.antihtn ? true
+        : (sbp !== null || dbp !== null) ? ((sbp ?? 0) >= 130 || (dbp ?? 0) >= 80) : null;
+  src.htn = M.antihtn ? '使用降壓藥物中'
+        : (sbp !== null || dbp !== null) ? `${bpLabel} ${D.htn ? '≥' : '<'} 130/80` : '';
+  D.dm = (glu !== null || hba1c !== null) ? ((glu ?? 0) >= 126 || (hba1c ?? 0) >= 6.5) : null;
+  src.dm = (glu !== null || hba1c !== null)
+    ? [glu !== null ? `空腹血糖 ${glu}` : null, hba1c !== null ? `HbA1c ${hba1c}%` : null].filter(Boolean).join('、') : '';
+  D.ckd = (egfr !== null || uacr !== null) ? ((egfr !== null && egfr < 60) || (uacr ?? 0) >= 30) : null;
+  src.ckd = (egfr !== null || uacr !== null)
+    ? [egfr !== null ? `eGFR ${egfr}` : null, uacr !== null ? `UACR ${uacr}` : null].filter(Boolean).join('、')
+      + (D.ckd ? '（須持續 ≥ 3 個月）' : '') : '';
+  D.ms_waist = (waist !== null && M.sex) ? ((male && waist >= 90) || (!male && waist >= 80)) : null;
+  src.ms_waist = waist !== null ? `腰圍 ${waist} cm` : '';
+  D.ms_bp = M.antihtn ? true
+          : (sbp !== null || dbp !== null) ? ((sbp ?? 0) >= 130 || (dbp ?? 0) >= 85) : null;
+  src.ms_bp = M.antihtn ? '使用降壓藥物中' : (sbp !== null || dbp !== null) ? bpLabel : '';
+  D.ms_glu = glu !== null ? glu >= 100 : null;
+  src.ms_glu = glu !== null ? `空腹血糖 ${glu}` : '';
+  D.ms_tg = tg !== null ? tg >= 150 : null;
+  src.ms_tg = tg !== null ? `TG ${tg}` : '';
+  D.ms_hdl = fHdlLow;
+  src.ms_hdl = hdl !== null ? `HDL-C ${hdl}` : '';
+
+  AUTOKEYS.forEach(k=>{
+    const tag = $('t-'+k);
+    if (over.has(k)){ tag.className = 'tag manual'; tag.textContent = '手動'; return; }
+    if (D[k] === null || D[k] === undefined){ tag.className = 'tag'; tag.textContent = ''; return; }
+    if (M[k] !== D[k]){ M[k] = D[k]; sync(k); }
+    tag.className = 'tag ' + (D[k] ? 'autoY' : 'autoN');
+    tag.textContent = (D[k] ? '自動勾選：' : '自動判定：') + src[k];
+  });
+  $('resetAuto').style.display = over.size ? 'inline' : 'none';
+
+  // 同步提示
+  $('syncMsg').innerHTML = (M.sex || age || ldl)
+    ? `已由分頁 ① 帶入：${[age?`年齡 ${age} 歲`:null, M.sex?(male?'男性':'女性'):null,
+        ldl?`LDL-C ${ldl}`:null, hdl?`HDL-C ${hdl}`:null, sbp?`SBP ${sbp}`:null,
+        cac!==null?`CAC ${cac}`:null, M.smoker?'吸菸':null, M.famhx?'早發 CAD 家族史':null].filter(Boolean).join('、')}
+        ${t1 ? `　|　TwCCCC 10 年 CAD 風險 <b>${(t1.risk*100).toFixed(1)}%</b>（${t1.total} 分）` : ''}
+        <br>在本頁修改任一欄位也會同步回分頁 ①。`
+    : '分頁 ① 已輸入的資料會自動帶入本頁；在本頁修改也會同步回分頁 ①。';
+
+  // non-HDL 現值
+  $('nonhdlNow').textContent = (tc !== null && hdl !== null)
+    ? `目前 non-HDL-C = ${Math.round(tc - hdl)} mg/dL（TC − HDL-C）` : '輸入 TC 與 HDL-C 後自動計算目前 non-HDL-C';
+
+  // 自動判定旗標
+  const fLdl190 = ldl !== null && ldl >= 190;
+  const fCac400 = cac !== null && cac >= 400;
+  const fAge   = age !== null && M.sex && ((male && age >= 45) || (!male && age >= 55));
+  const fHdl   = fHdlLow === true;
+  setAuto('ldl190', fLdl190, ldl===null ? '未輸入 LDL-C' : `目前 ${ldl} mg/dL`);
+  setAuto('cac400', fCac400, cac===null ? '未輸入 CAC' : `目前 ${cac}`);
+  setAuto('agerf',  fAge,   (age===null||!M.sex) ? '需年齡與性別' : `${male?'男':'女'}性 ${age} 歲`);
+  setAuto('fam',    M.famhx, undefined);
+  setAuto('hdl',    fHdl,   (hdl===null||!M.sex) ? '需 HDL-C 與性別' : `目前 ${hdl} mg/dL`);
+  setAuto('smk',    M.smoker, undefined);
+
+  // 代謝症候群
+  $('h-htn').textContent = '';
+  const msCount = [M.ms_waist, M.ms_bp, M.ms_glu, M.ms_tg, M.ms_hdl].filter(Boolean).length;
+  const fMets = msCount >= 3;
+  setAuto('mets', fMets, `${msCount} / 5 項`);
+
+  // 風險等級判定
+  const ehighList = [
+    M.mi1y && '1 年內心肌梗塞', M.mi2 && '≥ 2 次心肌梗塞', M.mvd && '多血管冠心病',
+    M.acsdm && 'ACS 合併糖尿病', M.padcar && '合併周邊動脈疾病或頸動脈狹窄'
+  ].filter(Boolean);
+  const isEhigh = (M.cad && ehighList.length > 0) || (M.pad && (M.cad || M.padcar));
+  const vhighList = [
+    M.acs && '曾發生 ACS', M.revasc && '曾接受冠狀動脈血管重建', M.stroke && '缺血性中風／TIA',
+    M.pad && '周邊動脈疾病', M.sten50 && '影像狹窄 ≥ 50%', M.cad && '已確診冠心病'
+  ].filter(Boolean);
+  const isVhigh = vhighList.length > 0;
+  const highList = [M.dm && '糖尿病', M.ckd && '慢性腎臟病', fLdl190 && `LDL-C ≥ 190（${ldl}）`, fCac400 && `CAC ≥ 400（${cac}）`].filter(Boolean);
+  const rfList = [
+    M.htn && '高血壓', fAge && `年齡（${male?'男 ≥ 45':'女 ≥ 55'}）`, M.famhx && '早發性冠心病家族史',
+    fHdl && 'HDL-C 偏低', M.smoker && '吸菸', fMets && `代謝症候群（${msCount} 項）`
+  ].filter(Boolean);
+
+  $('menoRow').style.display = M.sex === 'F' ? 'flex' : 'none';
+
+  let key = null, why = '';
+  if (isEhigh){ key='ehigh'; why = `判定依據：冠心病／周邊動脈疾病合併 ${ehighList.join('、') || '其他動脈硬化疾病'}`; }
+  else if (isVhigh){ key='vhigh'; why = `判定依據：${vhighList.join('、')}（次級預防）`; }
+  else if (highList.length){ key='high'; why = `判定依據：${highList.join('、')}`; }
+  else if (rfList.length >= 2){ key='moderate'; why = `判定依據：危險因子 ${rfList.length} 項 — ${rfList.join('、')}`; }
+  else if (rfList.length === 1){ key='low'; why = `判定依據：危險因子 1 項 — ${rfList[0]}`; }
+  else if (age !== null && M.sex){ key='none'; why = '判定依據：未符合高風險以上條件，且心血管危險因子 0 項'; }
+
+  document.querySelectorAll('#t1grid .col').forEach(c => c.classList.toggle('on', c.dataset.c === key));
+
+  if (!key || key === 'none'){
+    if (key === 'none'){
+      $('lrec').style.background = '#7ba832';
+      $('lTitle').textContent = '0 項心血管風險因子';
+      $('lBody').innerHTML = '未符合高風險以上條件，且未具任何列舉之心血管危險因子。'
+        + '2025 血脂共識 Table 1 未設此級（低風險定義為具 1 項危險因子）；'
+        + '<strong>健保 115/9/1 表一則另設「0 項心血管風險因子」級：起始 LDL-C ≥ 160、目標 &lt; 160 mg/dL</strong>，詳見分頁 ③。';
+      $('lWhy').textContent = why;
+      $('gLdl').textContent = '—'; $('gNon').textContent = '—';
+      $('gLdlNote').innerHTML = '本級請參閱分頁 ③ 健保表一之門檻。';
+      $('gNonNote').textContent = '健保表一 0 因子級無 non-HDL-C 次要目標。';
+      $('pathTitle').textContent = '建議臨床路徑';
+      $('steps').innerHTML = '<li><b>維持健康生活型態並定期健檢</b>若日後出現任一危險因子，再依 Table 1 重新分層。用藥給付判定請見分頁 ③。</li>';
+      R.lipid = {key, why, name:'0 項心血管風險因子', target:null, non:null, secondary:false,
+                 pathway:'Figure 1（初級預防）', steps:[['維持健康生活型態並定期健檢','若日後出現任一危險因子，再依 Table 1 重新分層。']],
+                 rfList, msCount, highList, vhighList, ehighList, ldlNote:'', nonNote:''};
+      return {key, why};
+    }
+    $('lrec').style.background = '#9aa0a6';
+    $('lTitle').textContent = '請輸入資料';
+    $('lBody').innerHTML = '需要年齡與性別才能判定危險因子項數；輸入後將顯示對應的 LDL-C／non-HDL-C 治療目標與臨床路徑。';
+    $('lWhy').textContent = '';
+    $('gLdl').textContent = '—'; $('gNon').textContent = '—';
+    $('gLdlNote').textContent = ''; $('gNonNote').textContent = 'LDL-C 達標後可作為次要治療目標';
+    $('pathTitle').textContent = '建議臨床路徑';
+    $('steps').innerHTML = '<li><b>請先完成上方輸入</b>判定風險等級後顯示對應之 Figure 1（初級預防）或 Figure 2（次級預防）路徑。</li>';
+    R.lipid = null;
+    return;
+  }
+
+  const T = TIER[key];
+  $('lrec').style.background = T.color;
+  $('lTitle').textContent = T.name;
+  const secondary = (key === 'vhigh' || key === 'ehigh');
+  $('lBody').innerHTML = `LDL-C 治療目標 <strong>&lt; ${T.target} mg/dL</strong>；non-HDL-C 次要目標 &lt; ${T.non} mg/dL。`
+    + `依 <strong>${secondary ? 'Figure 2（次級預防）' : 'Figure 1（初級預防）'}</strong> 路徑管理。`;
+  $('lWhy').textContent = why;
+
+  $('gLdl').textContent = `< ${T.target}`;
+  $('gNon').textContent = `< ${T.non}`;
+  if (ldl !== null){
+    if (ldl < T.target){
+      $('gLdlNote').innerHTML = `目前 ${ldl} mg/dL：<strong>已達標</strong>，維持治療並定期追蹤。`;
+    } else {
+      const pct = Math.round((ldl - T.target) / ldl * 100);
+      $('gLdlNote').innerHTML = `目前 ${ldl} mg/dL：距目標尚差 ${Math.round(ldl - T.target)} mg/dL，<strong>需再降 ≥ ${pct}%</strong>。`
+        + (pct >= 50 ? '（一般需高強度 statin 併用非 statin 藥物）' : pct >= 30 ? '（一般需中至高強度 statin）' : '');
+    }
+  } else $('gLdlNote').textContent = '輸入 LDL-C 後計算所需降幅。';
+  $('gNonNote').innerHTML = (tc !== null && hdl !== null)
+    ? `目前 non-HDL-C ${Math.round(tc-hdl)} mg/dL：${(tc-hdl) < T.non ? '<strong>已達標</strong>' : `距目標尚差 ${Math.round(tc-hdl-T.non)} mg/dL`}`
+    : 'LDL-C 達標後可作為次要治療目標（高 TG、糖尿病、肥胖者尤其適用）';
+
+  // 路徑步驟
+  const nonStatin = 'ezetimibe、PCSK9 單株抗體、PCSK9 siRNA、ATP citrate lyase 抑制劑';
+  let steps = [];
+  if (secondary){
+    $('pathTitle').innerHTML = 'Figure 2：次級預防臨床路徑　<span class="sub">clinical pathway for secondary prevention</span>';
+    steps = [
+      ['建議評估','所有病人皆測完整血脂；<strong>急性病人於入院 24 小時內</strong>抽驗。同時處理所有可調整之心血管危險因子（血壓、HbA1c、肥胖、吸菸、飲酒、生活型態）。'],
+      ['治療目標',`本個案為 ${T.name} → <strong>LDL-C &lt; ${T.target} mg/dL</strong>。`],
+      ['初始治療','依基期 LDL-C、用藥史與臨床狀況，給予<strong>中強度或高強度 statin</strong>，或合併 ezetimibe。臨床判斷單用 statin 難以達標時，可及早合併非 statin 藥物。'],
+      ['6–8 週後複驗','評估是否達標。開始 statin 或加量後 3 個月內檢驗肝功能，之後除臨床需要外不需常規重複。'],
+      ['未達標','評估服藥遵囑性；考慮改用高強度 statin 或最大耐受劑量，或加上非 statin 藥物（' + nonStatin + '）。調整後 <strong>1–3 個月</strong>再驗 LDL-C，直至達標。'],
+      ['達標後追蹤','維持治療，<strong>每 6 個月</strong>追蹤完整血脂；若後續未維持在目標，回到「未達標」步驟調整。'],
+    ];
+  } else {
+    $('pathTitle').innerHTML = 'Figure 1：初級預防臨床路徑　<span class="sub">clinical pathway for primary prevention</span>';
+    const lowMod = (key === 'low' || key === 'moderate');
+    steps = [
+      ['建議評估','測完整血脂並找出所有可調整之心血管危險因子（血壓、HbA1c、肥胖、吸菸、飲酒、生活型態）。糖尿病、CKD 或 LDL-C ≥ 190 mg/dL 者屬高風險；嚴重高膽固醇血症、肌腱黃色瘤或早發性冠心病個人／家族史者應篩檢家族性高膽固醇血症。'],
+      ['治療目標',`本個案為 ${T.name} → <strong>LDL-C &lt; ${T.target} mg/dL</strong>` +
+        `（啟動治療門檻：低風險 1 項危險因子且 LDL-C ≥ 130、中度風險 ≥ 2 項且 LDL-C ≥ 115、高風險 LDL-C ≥ 100 mg/dL）。`],
+    ];
+    if (lowMod){
+      steps.push(['初始治療','<strong>生活型態調整</strong>並控制所有可調整危險因子：血壓 &lt; 130/80 mmHg、HbA1c &lt; 7%（可個別化）；健康飲食、規律運動、戒菸、體重控制。']);
+      steps.push(['3–6 個月後評估','若 LDL-C 未達標 → 經醫病共同決策後，<strong>考慮開始中強度 statin</strong>；長期用藥的遵囑性對 LDL-C 控制很重要。']);
+      steps.push(['再 6–8 週複驗','仍未達標 → 評估遵囑性，考慮高強度 statin 或最大耐受劑量，或加上非 statin 藥物（' + nonStatin + '）。']);
+      steps.push(['達標後追蹤','維持治療，<strong>每 6–12 個月</strong>追蹤完整血脂（依臨床狀況）。']);
+    } else {
+      steps.push(['初始治療','依基期 LDL-C 與臨床狀況，給予<strong>中至高強度 statin</strong>，或合併 ezetimibe，並同時進行生活型態調整。']);
+      steps.push(['6–8 週後複驗','評估是否達標。開始 statin 或加量後 3 個月內檢驗肝功能，之後除臨床需要外不需常規重複。']);
+      steps.push(['未達標','評估服藥遵囑性；考慮高強度 statin 或最大耐受劑量，或加上非 statin 藥物（' + nonStatin + '）。調整後 <strong>1–3 個月</strong>再驗 LDL-C。']);
+      steps.push(['達標後追蹤','維持治療，<strong>每 6 個月</strong>追蹤完整血脂。']);
+    }
+    steps.push(['提升遵囑性','明確告知病人 LDL-C 目標值；善用健保「健康存摺」等數位工具；提供衛教資源，並於回診時再評估療效與遵囑性。']);
+  }
+  $('steps').innerHTML = steps.map(([h,b]) => `<li><b>${h}</b>${b}</li>`).join('');
+  R.lipid = {key, why, name:T.name, target:T.target, non:T.non, secondary,
+             pathway: secondary ? 'Figure 2（次級預防）' : 'Figure 1（初級預防）',
+             steps: steps.map(([h,b]) => [h, b.replace(/<[^>]+>/g,'')]),
+             rfList, msCount, highList, vhighList, ehighList,
+             ldlNote: $('gLdlNote').textContent, nonNote: $('gNonNote').textContent};
+  return {key, why};
+}
+
+/* ============ 分頁 ③：健保給付規定（115/9/1） ============ */
+const LIST_A = {"AC46402100": "Simvatin film coating tablets 20mg", "AC39307100": "Delipic tablets 20mg \"Standard\" (lovastatin)", "AB47348100": "Vatatin F.C. tablets 20mg \"STANDARD\"", "A042389100": "Lovatin tablets 20mg \"PANBIOTIC\"", "BC24339100": "Simvahexal film- coated tablets 40mg", "BC23596100": "Mevalotin protect 40mg tablets", "AC49672100": "Simatin F.C. tablets 20mg", "AC52581100": "Joinlo tablets 40mg “EVEREST”", "AC49841100": "Simpotin F.C. tablets 20 mg \"Weidar\"", "AB49454100": "Pratin tablets 40 mg (pravastatin sodium)", "AC47924100": "Zostatin F.C. tablets 20 mg \"S.C.\"", "AB48586100": "Pavatin protect tablets 20mg \"Standard\" (pravastatin sodium)", "BC23970100": "Simvahexal film- coated tablets 20mg", "AB48681100": "U-Chu Pavadin tablets 20 mg", "AC49360100": "Bezostatin F.C. tablets 40 mg \"S.C.\"", "AB46029100": "Pratin tablets 10mg (pravastatin sodium)", "AC48813100": "Simvatenin F.C. tablets 20mg (simvastatin)", "AB48644100": "Mechol tablets 20mg \"Yung Shin\"", "AC56804100": "Simvastatin F.C. tablets 20mg \"CYH\"", "AB49021100": "Pratin tablets 20 mg", "AC49699100": "Simatin F.C. tablets 10mg", "BC23597100": "Mevalotin protect 20mg tablets", "AC47907100": "Sinty F.C. tablets 20mg", "AC57126100": "Pavatin protect tablets 40mg \"Standard\" (pravastatin sodium)", "AC48926100": "Simva F.C. tablets 20 mg", "AC48469100": "Mechol tablets 10mg \"Yung Shin\"", "AC49190100": "Sivasin film coated tablets 40mg", "AC57741100": "Joinlo tablet 20mg EVEREST", "AC58207100": "Simvatin film coating tablets 40mg", "BC23556100": "Lescol XL film-coated tablets 80mg", "AC48608100": "Simva F.C. tablets 20mg \"Union\"", "BC26147100": "Fluvastatin XL film- coated tablets 80mg", "AC49997100": "Simatin F.C. tablets 40 mg", "AC56629100": "Lecitol XL film-coated Tablets 80mg", "A055967100": "Simva F.C. tablets 40mg \"Union\"", "AC55272100": "Atorva film-coated tablets 10mg \"Standard\" (atorvastatin)", "AC56806100": "Sinty F.C. tablets 40mg", "BA25337100": "Tulip 20mg film coated tablets", "AC39403100": "Lozutin tablets 20mg (lovastatin)", "BA25200100": "Tulip 10mg film coated tablets", "AC48879100": "Anxolipo F.C. tablet 10 mg", "AC56319100": "Lipiminus F.C.tablets 10mg", "AC57267100": "Atotin F.C. tablets 10mg", "AC57133100": "Atotin F.C. tablets 40mg", "AC51598100": "Atoty F.C. tablets 10 mg", "AC52301100": "Lipiminus F.C tablets 40mg", "AC58211100": "Atotin F.C. tablets 20mg", "AC57930100": "Atova F.C. tablets 10mg \"Yu Sheng\"", "AC49226100": "Anxolightor F.C. tablets 20 mg", "AC56682100": "Atoroty F.C. tablets 10mg", "AC58517100": "Atoroty F.C. tablets 20mg", "AC50086100": "Atorcal F.C. tablets 40 mg \"S.C.\"", "AC57805100": "Atorva F.C. tab. 20mg \"Standard\" (atorvastatin)", "AB57967100": "Atorstin film coated tablets 10mg", "AA49543100": "Atorin F.C. tablet 10mg", "AC58041100": "Atoty F.C. tablets 40mg", "BA25201100": "Tulip 40mg film coated tablets", "AB57772100": "Atorstin film coated tablets 40mg", "AA57774100": "Atover F.C. Tab. 10mg P.L.", "AB58049100": "Atorstin film coated tablets 20mg", "AC52530100": "Atorin F.C. tablets 20mg", "AB51732100": "Atorin F.C. tablets 40mg", "AC55583100": "Atorcal F.C. tablets 20mg \"S.C.\"", "AC58262100": "Atoroty F.C. tablets 40mg", "AC55895100": "Atorcal F.C. tablets 10mg \"S.C.\"", "AA57802100": "Roty F.C. tablets 10mg", "AA57950100": "Atover F.C. tablets 20mg P.L.", "AA57843100": "Roty F.C. tablets 5mg", "AC55268100": "Atorva film-coated tablets 40mg \"Standard\"(atorvastatin)", "BC24597100": "Crestor 5mg film-coated tablets", "AC55952100": "Atoty F.C. tablets 20 mg", "AC57803100": "Roty F.C. tablets 20mg", "AA56739100": "Anxolipo F.C. tablets 20mg", "BC24129100": "Crestor 20mg film- coated tablets", "AC55956100": "Lipiminus F.C. tablets 20mg", "AB57940100": "Rosulator F.C. tablets 10mg \"S.C.\"", "AB54967100": "Atover F.C. tablets 40 mg \"P.L.\"", "BC26543100": "Alvostat film coated tablets 10mg", "AA49288100": "Anxolipo F.C. tablets 40mg", "AC59266100": "Rostatin F.C. tablets 5mg \"Standard\"", "AC58282100": "Rostatin F.C. tablets 10mg \"Standard\"", "AC58526100": "Pitastatin F.C. tablets 2mg", "AC58384100": "Rosu F.C. tablets 10mg", "AC58633100": "Pitarty F.C. tablets 4mg", "AC57130100": "Rotlip film-coated tablets 10mg", "AC58525100": "Pitastatin F.C. tablets 4mg", "AC59652100": "Rosulator F.C. tablets 5mg \"S.C.\"", "AC59398100": "Pivas F.C. tablets 2mg", "AC57809100": "Rolipostatin 10mg F.C. tablets \"Macro\"", "AC59192100": "Pitanxo F.C. tablets 4mg", "BC26900100": "Zyrova 20 (rosuvastatin tablets 20mg)", "AC60561100": "\"EVEREST\" Huiton F.C. tablets 2mg", "BC27782100": "Zyrova 5 (rosuvastatin tablets 5mg)", "AC61795100": "Pistatin F.C. tablets 2mg", "AC58969100": "Aladdin F.C. tablets 10mg", "AC58078100": "Pitavol F.C.tablets 2mg", "BC27781100": "Zyrova 10 (rosuvastatin tablets 10mg)", "AC60174100": "Pitavastatin F.C. tablets 2mg \"CYH\"", "AC58067100": "Rosutor film-coated tablets 10mg", "AC59193100": "Pitanxo F.C. tablets 2mg", "BC26544100": "Alvostat film coated tablets 20mg", "AC60290100": "Lavitol film coated tablets 4mg", "AC60114100": "Rosutor film-coated tablets 5mg", "BC26169100": "Pravafen 40mg/160mg hard capsules", "AC59649100": "Rosulip F.C. tablets 5mg C.H.", "AC58270100": "Crosuty F.C. tablets 10mg", "BC24392100": "Caduet 5mg/20mg tablet", "AC58622100": "Rotlip film-coated tablets 5mg", "BC24391100": "Caduet 5mg/10mg tablet", "AC58098100": "Crosuty F.C. tablets 5mg", "AC59887100": "Dualpress F.C. tablets 5mg/10mg", "AC60197100": "Rosutor film-coated tablets 20mg", "AC60836100": "Dualpress F.C. tablets 5mg/20mg", "BC25350100": "Livalo tablets 2mg", "AA58648100": "Pitarty F.C. tablets 2mg", "BC27002100": "Livalo OD tablets 2mg"};
+const LIST_B = {"AC60610100": "Ezetity tablets 10mg", "BC27311100": "Ezzicad (ezetimibe) 10mg Tablets", "BC28252100": "Ezta 10 (ezetimibe Tablets 10mg)", "BC26552100": "Ezetimibe Sandoz 10mg tablets"};
+const LIST_C = {"AC59251100": "Agitin tablets 10/20mg", "AC60402100": "Sacure tablets 10/20mg", "BC28502100": "Ezta-SM 10+20 (ezetimibe and simvastatin tablets 10mg/20mg)", "AC62052100": "Zoliton tablets 10/20mg", "AC62053100": "Zoliton tablets 10/10mg", "AC62140100": "Zovastin tablets 10/10mg", "AC62139100": "Zovastin tablets 10/20mg", "BC28181100": "Cretrol Tab. 10/10 mg", "BC28182100": "Cretrol Tab. 10/20 mg", "BC28884100": "Livazebe combination tablets HD (for 4mg)"};
+
+const NHI = {
+  ehigh:    {name:'極高風險',            lsm:'處置各項可改善心血管風險因子，與藥物治療並行', start:55,  goal:55,  non:85},
+  vhigh:    {name:'非常高風險',          lsm:'處置各項可改善心血管風險因子，與藥物治療並行', start:70,  goal:70,  non:100},
+  high:     {name:'高風險',              lsm:'生活型態改變與藥物治療並行',                 start:100, goal:100, non:130},
+  moderate: {name:'中風險',              lsm:'給藥前應有 3–6 個月生活型態改變',            start:115, goal:115, non:145},
+  low:      {name:'低風險',              lsm:'給藥前應有 3–6 個月生活型態改變，並處置心血管風險因子', start:130, goal:130, non:160},
+  none:     {name:'0 項心血管風險因子',   lsm:'給藥前應有 3–6 個月生活型態改變，並處置心血管風險因子', start:160, goal:160, non:null},
+};
+const NHI_ORDER = ['ehigh','vhigh','high','moderate','low','none'];
+
+(function(){
+  $('nTable').innerHTML = NHI_ORDER.map(k=>{
+    const t = NHI[k];
+    return `<tr data-r="${k}"><td>${t.name}</td><td style="font-size:12px">${t.lsm}</td>`
+      + `<td>LDL-C ≥ ${t.start}</td><td>LDL-C &lt; ${t.goal}</td><td>${t.non ? '&lt; ' + t.non : '—'}</td></tr>`;
+  }).join('');
+})();
+
+$('nhiCode').addEventListener('input', renderCode);
+function renderCode(){
+  const c = $('nhiCode').value.trim().toUpperCase();
+  const out = $('codeOut');
+  if (!c){ out.style.background='#f2f4f6'; out.style.color='var(--muted)';
+    out.textContent='輸入健保碼後，判定該品項適用表一（新制）或僅適用表二（舊制），以及 ezetimibe／複方之等待期。'; return; }
+  const set = (bg,col,html)=>{ out.style.background=bg; out.style.color=col; out.innerHTML=html; };
+  if (LIST_A[c]) return set('#fbeae8','#7a2018',
+    `<strong>${LIST_A[c]}</strong><br>列於 2.6.1「不適用表一」清單（共 116 項）→ 此病人使用本品時，<strong>起始值與目標值改依表二（舊制）判定</strong>，請見下方表二對照。`);
+  if (LIST_B[c]) return set('#fff8e6','#6b5518',
+    `<strong>${LIST_B[c]}</strong><br>列於 2.6.2 清單（共 4 項）→ 仍須 <strong>statin 單一治療滿 3 個月</strong>未達標，始得併用；不適用 6~8 週門檻。`);
+  if (LIST_C[c]) return set('#fff8e6','#6b5518',
+    `<strong>${LIST_C[c]}</strong><br>列於 2.6.3 複方清單（共 10 項）→ 仍須 <strong>statin 單一治療滿 3 個月</strong>未達標，始得使用；不適用 6~8 週門檻。`);
+  if (/^[A-Z]{1,2}\d{8,9}$/.test(c) && c.length === 10) return set('#eaf6ee','#1d5e33',
+    `健保碼 <strong>${c}</strong> 不在三份清單內 → <strong>適用表一（新制）</strong>；若為 ezetimibe 或複方，statin 單一治療 <strong>6~8 週</strong>未達標即可併用／換用。`);
+  set('#f2f4f6','var(--muted)','健保碼格式為 1–2 位英文字母加數字、共 10 碼，例如 BC24129100。');
+}
+
+function calcTab3(r){
+  const ldl = N('ldl'), tc = N('tc'), hdl = N('hdl');
+  const key = r && r.key;
+  const T0 = key ? NHI[key] : null;
+  const nonHdl = (tc !== null && hdl !== null) ? Math.round(tc - hdl) : null;
+  const male = M.sex === 'M';
+
+  /* ---- 目前血脂值 ---- */
+  $('cLdl').innerHTML = ldl !== null ? `${ldl} <span style="font-size:13px;font-weight:400;color:var(--muted)">mg/dL</span>` : '—';
+  $('cLdlNote').innerHTML = ldl === null ? '請於分頁 ①／② 輸入 LDL-C'
+    : !T0 ? '待風險分層後比對目標'
+    : ldl < T0.goal ? `<span style="color:var(--low);font-weight:700">已達標</span>（目標 &lt; ${T0.goal}）`
+    : `距目標 &lt; ${T0.goal} 尚差 <strong>${Math.round(ldl - T0.goal)}</strong> mg/dL，需再降 <strong>≥ ${Math.round((ldl-T0.goal)/ldl*100)}%</strong>`;
+
+  $('cNon').innerHTML = nonHdl !== null ? `${nonHdl} <span style="font-size:13px;font-weight:400;color:var(--muted)">mg/dL</span>` : '—';
+  $('cNonNote').innerHTML = nonHdl === null ? '需輸入總膽固醇 TC 與 HDL-C'
+    : !T0 ? `＝ ${tc} − ${hdl}，待風險分層後比對目標`
+    : !T0.non ? `＝ ${tc} − ${hdl}；本級（0 因子）無 non-HDL-C 次要目標`
+    : nonHdl < T0.non ? `＝ ${tc} − ${hdl}；<span style="color:var(--low);font-weight:700">已達標</span>（目標 &lt; ${T0.non}）`
+    : `＝ ${tc} − ${hdl}；距目標 &lt; ${T0.non} 尚差 <strong>${nonHdl - T0.non}</strong> mg/dL`;
+
+  $('cTc').innerHTML = tc !== null ? `${tc} <span style="font-size:13px;font-weight:400;color:var(--muted)">mg/dL</span>` : '—';
+  $('cHdl').innerHTML = hdl !== null ? `${hdl} <span style="font-size:13px;font-weight:400;color:var(--muted)">mg/dL</span>` : '—';
+  $('cHdlNote').innerHTML = (hdl === null || !M.sex) ? '男 &lt; 40／女 &lt; 50 mg/dL 列為心血管危險因子'
+    : ((male && hdl < 40) || (!male && hdl < 50))
+      ? `<span style="color:var(--high);font-weight:700">偏低</span>（${male ? '男 < 40' : '女 < 50'}）→ 已計為危險因子`
+      : `未達偏低標準（${male ? '男 < 40' : '女 < 50'}）`;
+  document.querySelectorAll('#nTable tr').forEach(tr=>{
+    tr.style.background = tr.dataset.r === key ? 'var(--accent-soft)' : '';
+    tr.style.fontWeight = tr.dataset.r === key ? '700' : '';
+  });
+
+  if (!key){
+    $('nRec').style.background = '#9aa0a6';
+    $('nTitle').textContent = '請先於分頁 ② 完成輸入';
+    $('nBody').textContent = '判定風險等級後，將顯示健保表一之非藥物治療要求、起始藥物治療血脂值與目標值。';
+    $('nWhy').textContent = '';
+    ['nLsm','nStart','nGoal','nNon'].forEach(i => $(i).textContent = '—');
+    ['nStartNote','nGoalNote','nNonNote'].forEach(i => $(i).textContent = '');
+    $('nSteps').innerHTML = '<li><b>請先完成分頁 ② 之輸入</b>判定風險等級後顯示對應處方規定。</li>';
+    $('nFh').textContent = '';
+    $('intenOut').textContent = '需分頁 ② 之風險等級與目前 LDL-C。';
+    $('t2Rec').style.background = '#9aa0a6'; $('t2Title').textContent = '—';
+    $('t2Body').textContent = ''; $('t2Gap').textContent = '';
+    $('t2Start').textContent = '—'; $('t2Goal').textContent = '—';
+    $('t2StartNote').textContent = ''; $('t2GoalNote').textContent = '';
+    $('t2Table').innerHTML = '';
+    R.nhi = null;
+    return;
+  }
+
+  const T = NHI[key], sec = (key === 'ehigh' || key === 'vhigh'), drug = (sec || key === 'high');
+  $('nRec').style.background = TIER[key] ? TIER[key].color : '#7ba832';
+  $('nTitle').textContent = `健保表一：${T.name}`;
+  $('nBody').innerHTML = `起始藥物治療血脂值 <strong>LDL-C ≥ ${T.start} mg/dL</strong>；主要目標 <strong>LDL-C &lt; ${T.goal} mg/dL</strong>`
+    + (T.non ? `；次要目標 non-HDL-C &lt; ${T.non} mg/dL。` : '（本級無 non-HDL-C 次要目標）。');
+  $('nWhy').textContent = r.why || '';
+
+  $('nLsm').textContent = T.lsm;
+  $('nStart').textContent = `≥ ${T.start}`;
+  $('nGoal').textContent = `< ${T.goal}`;
+  $('nNon').textContent = T.non ? `< ${T.non}` : '—';
+
+  if (ldl === null) $('nStartNote').textContent = '輸入 LDL-C 後判定是否達給付起始門檻。';
+  else if (ldl >= T.start) $('nStartNote').innerHTML = `目前 ${ldl} mg/dL <strong>已達起始藥物治療門檻</strong>`
+    + (drug ? '，可起始給藥。' : '，惟本級須先完成 3–6 個月非藥物治療。');
+  else $('nStartNote').innerHTML = `目前 ${ldl} mg/dL <strong>未達</strong>起始門檻（差 ${Math.round(T.start - ldl)} mg/dL），以非藥物治療為主。`;
+
+  let need = null;
+  if (ldl !== null){
+    if (ldl < T.goal) $('nGoalNote').innerHTML = '<strong>已達標</strong>，維持治療。';
+    else { need = Math.round((ldl - T.goal) / ldl * 100);
+      $('nGoalNote').innerHTML = `尚須降 <strong>≥ ${need}%</strong>（${Math.round(ldl - T.goal)} mg/dL）。`; }
+  } else $('nGoalNote').textContent = '';
+  $('nNonNote').innerHTML = (T.non && tc !== null && hdl !== null)
+    ? `目前 ${Math.round(tc-hdl)} mg/dL：${(tc-hdl) < T.non ? '<strong>已達標</strong>' : `尚差 ${Math.round(tc-hdl-T.non)} mg/dL`}`
+    : (T.non ? '輸入 TC 與 HDL-C 後計算。' : '');
+
+  // statin 強度建議
+  if (need === null){
+    $('intenOut').innerHTML = ldl === null ? '輸入 LDL-C 後給出強度建議。'
+      : `目前 LDL-C ${ldl} mg/dL 已達 ${T.name}目標（&lt; ${T.goal}），維持現行治療即可。`;
+  } else {
+    const lvl = need >= 50 ? ['高強度 statin（↓ ≥ 50%），必要時併用 ezetimibe', '#c0392b']
+              : need >= 30 ? ['中至高強度 statin（↓ 30–50%）', '#d0651a']
+              : ['中強度 statin 通常已足夠（↓ 30–<50%）', '#c48a12'];
+    $('intenOut').innerHTML = `<span style="color:${lvl[1]};font-weight:700">需降 ≥ ${need}% → 建議${lvl[0]}</span>`
+      + `<br>院內對應：${need >= 50 ? 'Lipitor 40mg（唯一高強度且適用表一）' : 'Lipitor 20mg、Crestor 10mg 或 Zulitor 4mg'}。`
+      + (drug ? '' : '<br>本級須先完成 3–6 個月非藥物治療，未達標再起始中強度 statin。');
+    $('intenOut').style.background = '#fbfcfd';
+  }
+
+  // 處方規定步驟
+  let steps;
+  if (drug){
+    $('nPathTitle').innerHTML = `表一處方規定：${T.name}　<span class="sub">起始即中至高強度 statin，6~8 週回診驗血脂</span>`;
+    steps = [
+      ['初始評估','檢測完整血脂指標；急性病人應於入院後 24 小時內完成血脂檢驗。處置可改善之風險因子：血壓、HbA1c、肥胖、抽菸、酒精攝取、生活型態。'],
+      ['起始治療','依基線血脂值、用藥史與臨床狀況，給予<strong>中至高強度 statin 或合併 ezetimibe</strong>' + (sec ? '' : '；同時進行生活型態改變') + '。'],
+      ['6~8 週後檢測血脂','達標 → 維持治療，每 6 個月追蹤。未達標 → 檢視服藥狀況，考慮調整至<strong>高強度 statin 或最大耐受劑量</strong>，同時考慮合併 non-statin（ezetimibe、PCSK9 單株抗體、siRNA、ATP citrate lyase 抑制劑）。'],
+      ['更動治療後 1~3 個月內追蹤','達標 → 維持治療，每 6 個月追蹤血脂指標。未達標 → 檢視服藥狀況，並考慮調整藥物組合。'],
+    ];
+  } else {
+    $('nPathTitle').innerHTML = `表一處方規定：${T.name}　<span class="sub">先做 3–6 個月生活型態改變</span>`;
+    steps = [
+      ['起始為非藥物治療','進行生活型態改變，並處置心血管風險因子（血壓、HbA1c、肥胖、抽菸、酒精攝取）。'],
+      ['3~6 個月後檢測血脂','達標 → 維持，每 6–12 個月追蹤血脂指標。未達標 → 給予<strong>中強度 statin</strong>。'],
+      ['中強度 statin 後 6~8 週追蹤','達標 → 維持，每 6–12 個月追蹤。未達標 → 檢視服藥狀況，可給予<strong>高強度 statin 或最大耐受劑量</strong>，或合併 non-statin 治療。'],
+    ];
+  }
+  steps.push(['加用 ezetimibe 或複方之等待期','statin 單一治療 <strong>6~8 週</strong>未達標即可合併／換用；但 2.6.2 之 4 項與 2.6.3 之 10 項品項仍須 statin 單一治療滿 3 個月（處方時請核對健保碼）。']);
+  $('nSteps').innerHTML = steps.map(([h,b]) => `<li><b>${h}</b>${b}</li>`).join('');
+  $('nFh').innerHTML = (key === 'high')
+    ? '高風險若有嚴重高膽固醇血症、肌腱黃色瘤、早發心血管疾病或家族病史，應依台灣家族性高膽固醇血症診斷標準進行篩檢。' : '';
+
+  // 表二（舊制）對照
+  const age = N('age');
+  const oldRF = [
+    M.htn && '高血壓',
+    (age !== null && M.sex && ((male && age >= 45) || (!male && (age >= 55 || M.meno)))) && (male ? '男性 ≥ 45 歲' : (age >= 55 ? '女性 ≥ 55 歲' : '已停經')),
+    M.famhx && '早發性冠心病家族史',
+    (hdl !== null && hdl < 40) && 'HDL-C < 40（舊制不分性別）',
+    M.smoker && '吸菸',
+  ].filter(Boolean);
+  const hasASCVD = M.acs || M.revasc || M.cad;
+  const T2ROWS = [
+    {id:'acs',  n:'有急性冠狀動脈症候群病史，或曾接受心導管介入／冠狀動脈繞道手術之冠狀動脈粥狀硬化患者', lsm:'與藥物治療可並行', ldl:70,  tc:null},
+    {id:'cvd',  n:'心血管疾病或糖尿病患者',   lsm:'與藥物治療可並行',            ldl:100, tc:160},
+    {id:'rf2',  n:'2 個危險因子或以上',        lsm:'給藥前應有 3–6 個月非藥物治療', ldl:130, tc:200},
+    {id:'rf1',  n:'1 個危險因子',              lsm:'給藥前應有 3–6 個月非藥物治療', ldl:160, tc:240},
+    {id:'rf0',  n:'0 個危險因子',              lsm:'給藥前應有 3–6 個月非藥物治療', ldl:190, tc:null},
+  ];
+  let rowId;
+  if (M.acs || M.revasc) rowId = 'acs';
+  else if (M.dm || hasASCVD || M.stroke) rowId = 'cvd';
+  else if (oldRF.length >= 2) rowId = 'rf2';
+  else if (oldRF.length === 1) rowId = 'rf1';
+  else rowId = 'rf0';
+  const t2 = T2ROWS.find(x => x.id === rowId);
+  t2.s = t2.tc ? `TC ≥ ${t2.tc} 或 LDL-C ≥ ${t2.ldl}` : `LDL-C ≥ ${t2.ldl}`;
+  t2.g = t2.tc ? `TC < ${t2.tc} 或 LDL-C < ${t2.ldl}` : `LDL-C < ${t2.ldl}`;
+  t2.sv = t2.ldl;
+
+  // 是否符合表二起始條件 / 是否達標
+  const hitLdl = ldl !== null && ldl >= t2.ldl;
+  const hitTc  = t2.tc !== null && tc !== null && tc >= t2.tc;
+  const haveData = ldl !== null || (t2.tc !== null && tc !== null);
+  const reasons = [
+    ldl !== null ? `LDL-C ${ldl} ${hitLdl ? '≥' : '<'} ${t2.ldl}` : null,
+    (t2.tc !== null && tc !== null) ? `TC ${tc} ${hitTc ? '≥' : '<'} ${t2.tc}` : null,
+  ].filter(Boolean).join('、');
+
+  if (!haveData){
+    $('t2Start').innerHTML = '—'; $('t2Start').style.color = 'var(--ink)';
+    $('t2StartNote').textContent = '需輸入 LDL-C' + (t2.tc ? '或總膽固醇 TC' : '');
+    $('t2Goal').innerHTML = '—'; $('t2Goal').style.color = 'var(--ink)';
+    $('t2GoalNote').textContent = '';
+  } else if (hitLdl || hitTc){
+    $('t2Start').innerHTML = '✓ 符合起始給付條件';
+    $('t2Start').style.color = 'var(--high)';
+    $('t2StartNote').innerHTML = `${reasons}${t2.lsm.includes('3–6') ? '；惟本列須先完成 3–6 個月非藥物治療' : '；非藥物治療可與藥物治療並行'}`;
+    $('t2Goal').innerHTML = '✗ 未達目標'; $('t2Goal').style.color = 'var(--high)';
+    $('t2GoalNote').innerHTML = `目標 ${t2.g}`
+      + (ldl !== null && ldl >= t2.ldl ? `；LDL-C 尚須降 <strong>${Math.round(ldl - t2.ldl + 1)}</strong> mg/dL 以上` : '');
+  } else {
+    const noTc = t2.tc !== null && tc === null;
+    $('t2Start').innerHTML = '✗ 不符合起始給付條件';
+    $('t2Start').style.color = 'var(--low)';
+    $('t2StartNote').innerHTML = `${reasons}，未達表二起始門檻` + (noTc ? '（<strong>未輸入 TC，僅依 LDL-C 判定</strong>）' : '');
+    $('t2Goal').innerHTML = '✓ 已達表二目標'; $('t2Goal').style.color = 'var(--low)';
+    $('t2GoalNote').innerHTML = `目標 ${t2.g}（表二之目標值與起始值同數字）` + (noTc ? '；<strong>未輸入 TC，尚無法確認 TC 端是否達標</strong>' : '');
+  }
+
+  $('t2Table').innerHTML = T2ROWS.map(x=>{
+    const on = x.id === rowId;
+    return `<tr style="${on?'background:var(--accent-soft);font-weight:700':''}"><td style="font-size:12px">${x.n}</td>`
+      + `<td style="font-size:12px">${x.lsm}</td>`
+      + `<td>${x.tc ? `TC ≥ ${x.tc} 或 LDL-C ≥ ${x.ldl}` : `LDL-C ≥ ${x.ldl}`}</td>`
+      + `<td>${x.tc ? `TC &lt; ${x.tc} 或 LDL-C &lt; ${x.ldl}` : `LDL-C &lt; ${x.ldl}`}</td>`
+      + `<td>${on ? '← 適用' : ''}</td></tr>`;
+  }).join('');
+
+  $('t2Rec').style.background = '#5b6570';
+  $('t2Title').textContent = `表二適用對象：${t2.n}`;
+  $('t2Body').innerHTML = `非藥物治療：${t2.lsm}　|　起始藥物治療血脂值：<strong>${t2.s}</strong>　|　目標值：<strong>${t2.g}</strong>`
+    + (oldRF.length ? `<br>舊制危險因子（${oldRF.length} 項）：${oldRF.join('、')}` : '<br>舊制危險因子：0 項');
+  const gap = t2.sv - T.start;
+  R.nhi = {
+    name: T.name, start: T.start, goal: T.goal, non: T.non, lsm: T.lsm, drug,
+    startNote: $('nStartNote').textContent, goalNote: $('nGoalNote').textContent,
+    inten: $('intenOut').textContent.replace(/\s+/g,' ').trim(),
+    steps: steps.map(([h,b]) => [h, b.replace(/<[^>]+>/g,'')]),
+    fh: $('nFh').textContent,
+    nonHdl,
+    t2: {row: t2.n, lsm: t2.lsm, start: t2.s, goal: t2.g,
+         meets: (hitLdl || hitTc), reason: reasons, oldRF,
+         startTxt: $('t2Start').textContent.trim(), goalTxt: $('t2Goal').textContent.trim()},
+  };
+  $('t2Gap').innerHTML = gap > 0
+    ? `門檻落差 <strong>${gap} mg/dL</strong>：若處方品項落在 116 項清單內（如 Caduet 5/20、Crestor 20mg），本病人須 LDL-C ≥ ${t2.sv} 才符合起始給付；`
+      + (ldl !== null && ldl >= T.start && ldl < t2.sv
+        ? `<strong>目前 LDL-C ${ldl} mg/dL 正落在此落差區間 → 換成清單內品項即可能不給付，請改開適用表一之品項。</strong>` : '改開適用表一之品項可維持較低門檻。')
+    : '本病人於表一與表二之起始門檻相同或表二較寬，選藥受影響較小。';
+  R.nhi.t2.gap = gap;
+  R.nhi.t2.gapTxt = $('t2Gap').textContent.replace(/\s+/g,' ').trim();
+}
+
+/* ============ 分頁 ④：病歷輸出 ============ */
+let NOTE_FMT = 'full';
+document.querySelectorAll('[data-fmt]').forEach(b => b.onclick = ()=>{
+  NOTE_FMT = b.dataset.fmt;
+  document.querySelectorAll('[data-fmt]').forEach(x => x.classList.toggle('on', x === b));
+  genNote();
+});
+['chartNo','ptName','noteDate'].forEach(id => $(id).addEventListener('input', genNote));
+(function(){ const d = new Date();
+  $('noteDate').value = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+})();
+
+const v = (x, u) => (x === null || x === undefined || x === '') ? '—' : x + (u || '');
+const yn = b => b ? '是' : '否';
+const YN = b => b ? 'yes' : 'no';
+const plain = s => String(s || '').replace(/<[^>]+>/g, '');
+
+function noteData(){
+  const male = M.sex === 'M';
+  const tc = N('tc'), hdl = N('hdl');
+  const nonHdl = (tc !== null && hdl !== null) ? Math.round(tc - hdl) : null;
+  return {male, nonHdl, tc, hdl,
+    age:N('age'), sbp:N('sbp'), dbp:N('dbp'), ldl:N('ldl'),
+    tg:N('tg'), glu:N('glu'), hba1c:N('hba1c'), egfr:N('egfr'), uacr:N('uacr'),
+    waist:N('waist'), cac:N('cac'), bmi:R.bmi};
+}
+
+function genNote(){
+  const d = noteData();
+  const hdr = [];
+  if ($('ptName').value.trim()) hdr.push($('ptName').value.trim());
+  if ($('chartNo').value.trim()) hdr.push('病歷號 ' + $('chartNo').value.trim());
+  const date = $('noteDate').value.trim();
+  $('note').value = NOTE_FMT === 'en' ? noteEN(d, hdr, date)
+                  : NOTE_FMT === 'brief' ? noteBrief(d, hdr, date)
+                  : noteFull(d, hdr, date);
+}
+
+function noteFull(d, hdr, date){
+  const L = [];
+  L.push('【心血管風險評估與血脂治療計畫】' + (date ? '　' + date : ''));
+  if (hdr.length) L.push(hdr.join('　'));
+  L.push('');
+
+  L.push('一、基本資料與檢驗值');
+  L.push(`　年齡 ${v(d.age,' 歲')}，性別 ${M.sex ? (d.male ? '男' : '女') : '—'}，BMI ${d.bmi ? d.bmi.toFixed(1) + ' kg/m²' : '—'}`
+    + (N('ht') && N('wt') ? `（身高 ${N('ht')} cm、體重 ${N('wt')} kg）` : ''));
+  L.push(`　血壓（722 居家）${v(d.sbp)}/${v(d.dbp)} mmHg；使用降壓藥物：${yn(M.antihtn)}`
+    + (d.waist !== null ? `；腰圍 ${d.waist} cm` : ''));
+  L.push(`　LDL-C ${v(d.ldl)}、HDL-C ${v(d.hdl)}、TC ${v(d.tc)}、non-HDL-C ${v(d.nonHdl)} mg/dL`
+    + (d.tg !== null ? `、TG ${d.tg} mg/dL` : ''));
+  const labs = [d.glu !== null ? `空腹血糖 ${d.glu} mg/dL` : null, d.hba1c !== null ? `HbA1c ${d.hba1c}%` : null,
+                d.egfr !== null ? `eGFR ${d.egfr} mL/min/1.73m²` : null, d.uacr !== null ? `UACR ${d.uacr} mg/g` : null,
+                d.cac !== null ? `CAC score ${d.cac}` : null].filter(Boolean);
+  if (labs.length) L.push('　' + labs.join('、'));
+  L.push(`　吸菸：${yn(M.smoker)}；早發性冠心病家族史：${yn(M.famhx)}；糖尿病：${yn(M.dm)}；慢性腎臟病：${yn(M.ckd)}`);
+  L.push('');
+
+  L.push('二、心血管風險評估');
+  L.push(R.t1
+    ? `　1. TwCCCC 10 年冠心病風險（TSOC 2024 指引 Table 4）：總分 ${R.t1.total}/24 → `
+      + `${R.t1.risk === undefined ? '< 0.1%' : (R.t1.risk*100).toFixed(1) + '%'}，${R.t1.label}`
+    : '　1. TwCCCC 10 年冠心病風險（TSOC 2024 指引 Table 4）：資料不足，未計算');
+  if (R.t1) L.push('　　 計分：' + R.t1.rows.map(r => `${r[0]} ${r[1]}（${r[2]} 分）`).join('、'));
+  L.push('　2. CAC 風險修正演算法（TSOC 2024 指引 Figure 5）：'
+    + (!R.f5 ? '未評估' : (R.f5.note || R.f5.title)));
+  if (R.f5 && R.f5.ok && R.f5.path) L.push('　　 ' + R.f5.path);
+  L.push(R.lipid
+    ? `　3. 血脂風險分層（2025 血脂臨床路徑共識 Table 1／健保 115/9/1 表一）：${R.lipid.name}`
+      + `\n　　 ${R.lipid.why}`
+    : '　3. 血脂風險分層（2025 血脂共識 Table 1／健保表一）：資料不足，未判定');
+  if (R.lipid && R.lipid.rfList && R.lipid.rfList.length)
+    L.push(`　　 心血管危險因子 ${R.lipid.rfList.length} 項：${R.lipid.rfList.join('、')}`);
+  L.push('');
+
+  L.push('三、血脂臨床路徑位置');
+  if (R.lipid){
+    L.push(`　適用路徑：${R.lipid.pathway}`);
+    L.push('　目前位置：' + (R.lipid.secondary ? '已確診 ASCVD／影像顯著斑塊，須立即積極降脂治療（起始即中至高強度 statin）'
+      : R.lipid.key === 'high' ? '高風險，起始即給藥並於 6–8 週複驗'
+      : R.lipid.key === 'none' ? '未具列舉之危險因子，以生活型態調整為主'
+      : '中／低風險，先行 3–6 個月生活型態調整後再評估是否給藥'));
+  } else L.push('　資料不足，未判定');
+  if (R.nhi){
+    L.push(`　健保表一（115/9/1 生效）：${R.nhi.name}；非藥物治療＝${R.nhi.lsm}`);
+    L.push(`　　起始藥物治療血脂值 LDL-C ≥ ${R.nhi.start} mg/dL；${R.nhi.startNote}`);
+    L.push(`　健保表二（舊制；處方品項若列於 2.6.1 之 116 項清單）：適用「${R.nhi.t2.row}」`);
+    L.push(`　　起始 ${R.nhi.t2.start}；判定：${R.nhi.t2.startTxt}（${R.nhi.t2.reason || '資料不足'}）`);
+    if (R.nhi.t2.gapTxt) L.push('　　' + R.nhi.t2.gapTxt);
+  }
+  L.push('');
+
+  L.push('四、治療目標');
+  if (R.nhi){
+    L.push(`　LDL-C < ${R.nhi.goal} mg/dL` + (R.nhi.goalNote ? `（目前 ${v(d.ldl)} mg/dL；${R.nhi.goalNote.replace(/。$/,'')}）` : ''));
+    L.push('　non-HDL-C ' + (R.nhi.non ? `< ${R.nhi.non} mg/dL（LDL-C 達標後之次要標的）` : '本級無次要目標')
+      + (d.nonHdl !== null ? `；目前 ${d.nonHdl} mg/dL` : ''));
+  } else L.push('　資料不足，未判定');
+  L.push('　血壓 < 130/80 mmHg；HbA1c < 7%（可個別化）');
+  L.push('');
+
+  L.push('五、治療建議');
+  let n = 1;
+  if (R.nhi){
+    L.push(`　${n++}. 生活型態調整：${R.nhi.lsm}；併同處置血壓、血糖、體重、吸菸與飲酒。`);
+    if (R.nhi.inten && !/需分頁/.test(R.nhi.inten)) L.push(`　${n++}. 藥物強度：${R.nhi.inten}`);
+    R.nhi.steps.forEach(([h,b]) => L.push(`　${n++}. ${h}：${b}`));
+    L.push(`　${n++}. 肝功能：開始 statin 或加量後 3 個月內檢驗，之後除臨床需要外不需常規重複。`);
+    if (R.nhi.fh) L.push(`　${n++}. ${R.nhi.fh}`);
+  } else if (R.lipid){
+    R.lipid.steps.forEach(([h,b]) => L.push(`　${n++}. ${h}：${b}`));
+  } else L.push('　資料不足，未產生建議');
+  if (R.f5 && R.f5.ok && R.f5.title && !/尚未確認/.test(R.f5.title))
+    L.push(`　${n++}. CAC 演算法建議：${R.f5.title}`);
+  L.push('');
+  L.push('※ 本評估依 TSOC 2024 ASCVD 初級預防指引（Table 4／Figure 5）、2025 台灣血脂臨床路徑共識（Table 1／Figure 1／Figure 2）');
+  L.push('　 及健保署 115/9/1 生效之降血脂藥物給付規定產生，僅供臨床參考；實際處置以醫師臨床判斷與健保署最新公告為準。');
+  return L.join('\n');
+}
+
+function noteBrief(d, hdr, date){
+  const p = [];
+  p.push(`【血脂評估】${date}${hdr.length ? '　' + hdr.join('　') : ''}`);
+  p.push(`${v(d.age,'y')}${M.sex ? (d.male ? '/M' : '/F') : ''}`
+    + (d.bmi ? `, BMI ${d.bmi.toFixed(1)}` : '')
+    + `, BP ${v(d.sbp)}/${v(d.dbp)}；LDL-C ${v(d.ldl)}, HDL-C ${v(d.hdl)}, TC ${v(d.tc)}, non-HDL-C ${v(d.nonHdl)} mg/dL`
+    + (d.tg !== null ? `, TG ${d.tg}` : '') + (d.cac !== null ? `, CAC ${d.cac}` : '') + '。');
+  const risk = [];
+  if (R.t1) risk.push(`TwCCCC 10 年 CAD 風險 ${R.t1.risk === undefined ? '<0.1%' : (R.t1.risk*100).toFixed(1) + '%'}（${R.t1.total} 分，${R.t1.label}）`);
+  if (R.lipid) risk.push(`血脂風險分層 ${R.lipid.name}（${R.lipid.why.replace('判定依據：','')}）`);
+  if (risk.length) p.push(risk.join('；') + '。');
+  if (R.nhi){
+    p.push(`路徑：${R.lipid ? R.lipid.pathway : ''}，${R.nhi.lsm}；健保表一起始門檻 LDL-C ≥ ${R.nhi.start}，${R.nhi.startNote}`);
+    p.push(`目標 LDL-C < ${R.nhi.goal}${R.nhi.non ? '、non-HDL-C < ' + R.nhi.non : ''} mg/dL。`
+      + '計畫：' + (R.nhi.drug
+        ? '起始中至高強度 statin（必要時合併 ezetimibe），6–8 週後複驗；未達標則調整至高強度或最大耐受劑量，或加上非 statin 藥物（ezetimibe／PCSK9 mAb／siRNA／ATP citrate lyase 抑制劑），改藥後 1–3 個月追蹤，達標後每 6 個月追蹤。'
+        : '先行 3–6 個月生活型態調整並處置危險因子，未達標再給予中強度 statin，6–8 週後複驗，達標後每 6–12 個月追蹤。')
+      + ' 開始 statin 或加量後 3 個月內檢驗肝功能。');
+    if (R.nhi.t2.gap > 0) p.push(`註：處方若為健保 2.6.1「不適用表一」之 116 項品項（如 Caduet 5/20、Crestor 20mg），起始門檻改依表二（${R.nhi.t2.start}），與表一相差 ${R.nhi.t2.gap} mg/dL。`);
+  }
+  if (R.f5 && R.f5.ok && R.f5.title && !/尚未確認/.test(R.f5.title)) p.push(`CAC 演算法：${R.f5.title}。`);
+  return p.join('\n');
+}
+
+function noteEN(d, hdr, date){
+  const L = [];
+  const TIER_EN = {ehigh:'Extremely high risk', vhigh:'Very high risk', high:'High risk',
+                   moderate:'Moderate risk', low:'Low risk', none:'No listed CV risk factor'};
+  L.push('CARDIOVASCULAR RISK ASSESSMENT & LIPID MANAGEMENT PLAN' + (date ? '  (' + date + ')' : ''));
+  if (hdr.length) L.push(hdr.join('  ').replace('病歷號', 'Chart No.'));
+  L.push('');
+  L.push('S/O:');
+  L.push(`  ${v(d.age)} y/o ${M.sex ? (d.male ? 'male' : 'female') : ''}`
+    + (d.bmi ? `, BMI ${d.bmi.toFixed(1)} kg/m2` : '')
+    + `, home BP ${v(d.sbp)}/${v(d.dbp)} mmHg (on antihypertensive: ${YN(M.antihtn)})`);
+  L.push(`  Lipid panel: LDL-C ${v(d.ldl)}, HDL-C ${v(d.hdl)}, TC ${v(d.tc)}, non-HDL-C ${v(d.nonHdl)} mg/dL`
+    + (d.tg !== null ? `, TG ${d.tg} mg/dL` : ''));
+  const labs = [d.glu !== null ? `FPG ${d.glu} mg/dL` : null, d.hba1c !== null ? `HbA1c ${d.hba1c}%` : null,
+                d.egfr !== null ? `eGFR ${d.egfr}` : null, d.uacr !== null ? `UACR ${d.uacr} mg/g` : null,
+                d.cac !== null ? `CAC score ${d.cac}` : null].filter(Boolean);
+  if (labs.length) L.push('  ' + labs.join(', '));
+  L.push(`  Smoking: ${YN(M.smoker)}; FHx of premature CAD: ${YN(M.famhx)}; DM: ${YN(M.dm)}; CKD: ${YN(M.ckd)}`);
+  L.push('');
+  L.push('A:');
+  const T1_EN = {low:'Low, <3%/10y', borderline:'Borderline, 3-7%/10y',
+                 intermediate:'Intermediate, >7-10%/10y', high:'High, >10%/10y'};
+  L.push(R.t1
+    ? `  1. TwCCCC 10-year CAD risk (TSOC 2024, Table 4): ${R.t1.total}/24 points -> `
+      + `${R.t1.risk === undefined ? '<0.1%' : (R.t1.risk*100).toFixed(1) + '%'} (${T1_EN[R.t1.tier] || ''})`
+    : '  1. TwCCCC 10-year CAD risk: insufficient data');
+  L.push('  2. CAC algorithm (TSOC 2024, Figure 5): ' + (!R.f5 ? 'not assessed' : (R.f5.en || R.f5.note || R.f5.title)));
+  if (R.lipid) L.push(`  3. Lipid risk category (2025 Taiwan lipid pathway, Table 1 / NHI Table 1): ${TIER_EN[R.lipid.key] || R.lipid.name}`
+    + (R.lipid.rfList && R.lipid.rfList.length ? ` — ${R.lipid.rfList.length} CV risk factor(s)` : ''));
+  L.push('');
+  L.push('P:');
+  if (R.nhi){
+    L.push(`  Pathway: ${R.lipid && R.lipid.secondary ? 'Figure 2 (secondary prevention)' : 'Figure 1 (primary prevention)'}`);
+    L.push(`  Goal: LDL-C < ${R.nhi.goal} mg/dL` + (R.nhi.non ? `; non-HDL-C < ${R.nhi.non} mg/dL (secondary target)` : '')
+      + '; BP < 130/80 mmHg; HbA1c < 7%');
+    L.push(R.nhi.drug
+      ? '  1. Start moderate- to high-intensity statin (with ezetimibe if needed) plus lifestyle modification.'
+      : '  1. Lifestyle modification and risk-factor control first (3-6 months) before drug therapy.');
+    L.push(R.nhi.drug
+      ? '  2. Recheck lipid profile in 6-8 weeks. If not at goal: assess adherence, escalate to high-intensity or maximally tolerated statin, consider adding non-statin therapy (ezetimibe, PCSK9 mAb, siRNA, ATP citrate lyase inhibitor).'
+      : '  2. Recheck lipid profile in 3-6 months. If not at goal: start moderate-intensity statin, recheck in 6-8 weeks.');
+    L.push('  3. Recheck 1-3 months after any regimen change; once at goal, follow up lipid profile every '
+      + (R.nhi.drug ? '6 months' : '6-12 months') + '.');
+    L.push('  4. Check liver function within 3 months of statin initiation or dose up-titration.');
+    const atThr = d.ldl !== null && d.ldl >= R.nhi.start;
+    L.push(`  5. NHI Table 1 drug-therapy threshold: LDL-C >= ${R.nhi.start} mg/dL — `
+      + (d.ldl === null ? 'LDL-C not entered'
+        : atThr ? `current ${d.ldl} mg/dL, threshold met` + (R.nhi.drug ? ', drug therapy may be started' : ', but 3-6 months of lifestyle modification is required first')
+        : `current ${d.ldl} mg/dL, below threshold (short by ${Math.round(R.nhi.start - d.ldl)} mg/dL)`));
+    if (R.nhi.t2.gap > 0) L.push(`  6. If the prescribed product is on the NHI 2.6.1 exclusion list (116 items), Table 2 applies: ${R.nhi.t2.start} (threshold gap ${R.nhi.t2.gap} mg/dL).`);
+  } else L.push('  Insufficient data.');
+  L.push('');
+  L.push('Ref: TSOC 2024 ASCVD primary prevention guideline (Table 4, Figure 5); 2025 Taiwan consensus on the clinical pathway of blood cholesterol management (Table 1, Figures 1-2); NHI lipid-lowering drug reimbursement criteria effective 2026/09/01.');
+  return L.join('\n');
+}
+
+$('btnCopy').onclick = async ()=>{
+  const ta = $('note');
+  let ok = false;
+  try { await navigator.clipboard.writeText(ta.value); ok = true; }
+  catch(e){ ta.select(); try { ok = document.execCommand('copy'); } catch(e2){} window.getSelection().removeAllRanges(); }
+  $('copyMsg').textContent = ok ? '已複製到剪貼簿' : '複製失敗，請手動全選複製';
+  setTimeout(()=> $('copyMsg').textContent = '', 2500);
+};
+$('btnTxt').onclick = ()=>{
+  const blob = new Blob(['﻿' + $('note').value], {type:'text/plain;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `lipid_note_${($('chartNo').value.trim() || $('noteDate').value || 'note').replace(/[^\w-]/g,'')}.txt`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=> URL.revokeObjectURL(a.href), 1000);
+};
+$('btnPrint').onclick = ()=> window.print();
+
+function render(){ const t1 = calcTab1(); const t2 = calcTab2(t1); calcTab3(t2); genNote(); }
+document.querySelectorAll('[data-seg]').forEach(b => b.classList.toggle('on', b.dataset.val === M[b.dataset.seg]));
+render();
+</script>
+</body>
+</html>
